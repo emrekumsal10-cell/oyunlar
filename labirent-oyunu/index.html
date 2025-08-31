@@ -2,376 +2,373 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Labirent Oyunu</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Blok Kırıcı</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #0d0221;
+            --paddle-color: #f5f5f5;
+            --ball-color: #fcf6b1;
+            --brick-colors: ['#fa4659', '#2eb872', '#f9a828', '#3498db', '#9b59b6'];
+            --text-color: #FFFFFF;
+            --font-family: 'Press Start 2P', cursive;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            margin: 0;
-            background: #e0e0e0;
-            font-family: 'Arial', sans-serif;
-            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            font-family: var(--font-family);
+            color: var(--text-color);
+            padding: 10px;
+            touch-action: manipulation;
+        }
+
+        .game-container {
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            gap: 1rem;
+            width: 100%;
+            max-width: 600px; /* Genişletildi */
+        }
+
+        h1 { 
+            color: var(--text-color); 
+            text-shadow: 2px 2px 0px #fa4659, 4px 4px 0px #2eb872;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 1rem;
+        }
+
+        .canvas-wrapper { 
+            position: relative; 
+            width: 100%; 
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
+            border: 2px solid #fff;
+            border-radius: 8px;
             overflow: hidden;
-            background: #c0c0c0; /* Arka plan rengi */
         }
-        #menu {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 30px 40px;
-            background: rgba(255, 255, 255, 0.9);
-            border-radius: 15px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
-            border: 2px solid #555;
+        canvas { 
+            width: 100%; 
+            height: auto; 
+            background: linear-gradient(180deg, #0d0221 0%, #1a0a3d 100%);
+            display: block; 
         }
-        h1 {
-            color: #4CAF50;
-            margin-bottom: 25px;
-            font-size: 2.5em;
-            text-shadow: 2px 2px #333;
+
+        .overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(13, 2, 33, 0.8);
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center; text-align: center;
+            color: white; z-index: 10;
         }
-        button {
-            padding: 15px 25px;
-            font-size: 20px;
-            border: none;
-            border-radius: 10px;
-            background: #4CAF50;
-            color: white;
-            cursor: pointer;
-            margin: 12px;
-            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            font-family: 'Arial', sans-serif;
+        .overlay.hidden { display: none; }
+        .overlay h2 { font-size: 2rem; margin-bottom: 1.5rem; line-height: 1.2; text-shadow: 3px 3px 0px var(--paddle-color); }
+        .overlay button {
+            font-family: var(--font-family); font-size: 1rem; padding: 1rem 2rem;
+            background-color: #fa4659; color: var(--text-color); border: 2px solid var(--text-color); cursor: pointer;
+            box-shadow: 4px 4px 0px var(--text-color); transition: all 0.2s;
+            border-radius: 8px;
         }
-        button:hover {
-            background: #45a049;
-            transform: translateY(-3px) scale(1.02);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        .overlay button:hover { 
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--text-color);
         }
-        button:active {
-            transform: translateY(0) scale(0.98);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        canvas {
-            background: #fff;
-            display: none;
-            margin-top: 20px;
-            border: 5px solid #555;
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
-        }
-        .mobile-controls {
-            display: none; /* Varsayılan olarak gizli */
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-        }
-        .mobile-controls-row {
-            display: flex;
-            justify-content: center;
-        }
-        .control-btn {
-            width: 60px;
-            height: 60px;
-            margin: 5px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent; /* Mobil tıklama efektini kaldırır */
-        }
-        /* Sadece küçük ekranlarda mobil kontrolleri göster */
-        @media (max-width: 768px) {
-            .mobile-controls {
-                display: block;
-            }
+
+        @media (max-width: 600px) {
+            .hud, h1 { font-size: 0.8rem; }
+            .overlay h2 { font-size: 1.5rem; }
         }
     </style>
 </head>
 <body>
-    <div id="menu">
-        <h1>🌀 Labirent Oyunu</h1>
-        <button id="startButton">Başla</button>
-        <button onclick="showHighScore()">En Yüksek Skor</button>
-    </div>
-    <canvas id="gameCanvas"></canvas>
-    <div id="mobile-controls" class="mobile-controls">
-        <div class="mobile-controls-row">
-            <div class="control-btn" id="up-btn">⬆️</div>
+    <div class="game-container">
+        <h1>BLOK KIRICI</h1>
+        <div class="hud">
+            <div id="score-display">SKOR: 0</div>
+            <div id="lives-display">CAN: 3</div>
         </div>
-        <div class="mobile-controls-row">
-            <div class="control-btn" id="left-btn">⬅️</div>
-            <div class="control-btn" id="down-btn">⬇️</div>
-            <div class="control-btn" id="right-btn">➡️</div>
-        </div>
-    </div>
-    <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const menu = document.getElementById("menu");
-        const startButton = document.getElementById("startButton");
-        const mobileControls = document.getElementById("mobile-controls");
-
-        const levels = [
-            [
-                "1111111111",
-                "1S000000E1",
-                "1111111111"
-            ],
-            [
-                "111111111111",
-                "1S0000000001",
-                "101111111101",
-                "1000000000E1",
-                "111111111111"
-            ],
-            [
-                "1111111111111",
-                "1S000011110E1",
-                "1110100101101",
-                "1000100000001",
-                "1111111111111"
-            ],
-            [
-                "11111111111111",
-                "1S000010000001",
-                "10111011111011",
-                "1000000000000E",
-                "11111111111111"
-            ],
-            [
-                "111111111111111",
-                "1S0000000010001",
-                "101111111101111",
-                "10000000000000E",
-                "111111111111111"
-            ],
-            [
-                "1111111111111111",
-                "1S000000000000E1",
-                "1011111111111101",
-                "1000000000000001",
-                "1111111111111111"
-            ],
-            [
-                "11111111111111",
-                "1S000000000011",
-                "10111111111011",
-                "1000000001000E",
-                "11111111111111"
-            ],
-            [
-                "11111111111111",
-                "1S000000100001",
-                "11111100101111",
-                "1000000100000E",
-                "11111111111111"
-            ],
-            [
-                "1111111111111",
-                "1S00000000001",
-                "111111111101",
-                "100000000001",
-                "11111111110E",
-                "1111111111111"
-            ],
-            [
-                "11111111111111",
-                "1S00000000000E",
-                "11111111111111",
-                "10000000000001",
-                "11111111111111"
-            ]
-        ];
-
-        let maze = [];
-        let player = { row: 0, col: 0 };
-        let currentLevel = 0;
-        let score = 0;
-        let highScore = localStorage.getItem("labirentHighScore") || 0;
-        let isGameRunning = false;
-
-        function resizeCanvas() {
-            canvas.width = Math.min(window.innerWidth * 0.9, 800);
-            canvas.height = Math.min(window.innerHeight * 0.7, 600);
-            if (canvas.style.display === "block") {
-                draw();
-            }
-        }
-        resizeCanvas();
-        window.onresize = resizeCanvas;
-
-        function loadLevel(levelIndex) {
-            if (levelIndex >= levels.length) {
-                alert("🎉 Tebrikler! Tüm seviyeler bitti! Toplam Skor: " + score);
-                endGame();
-                return;
-            }
-            maze = levels[levelIndex].map(row => row.split(""));
-            for (let r = 0; r < maze.length; r++) {
-                for (let c = 0; c < maze[r].length; c++) {
-                    if (maze[r][c] === "S") {
-                        player = { row: r, col: c };
-                        break;
-                    }
-                }
-            }
-            draw();
-        }
-
-        function startGame() {
-            menu.style.display = "none";
-            canvas.style.display = "block";
-            mobileControls.style.display = "block";
-            score = 0;
-            currentLevel = 0;
-            isGameRunning = true;
-            loadLevel(currentLevel);
-        }
         
-        // "Başla" butonuna tıklanınca oyunu başlat
-        startButton.onclick = startGame;
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            
+            <div id="start-screen" class="overlay">
+                <h2>BAŞLAMAYA HAZIR MISIN?</h2>
+                <button id="start-button">BAŞLA</button>
+            </div>
+            
+            <div id="game-over-screen" class="overlay hidden">
+                <h2>OYUN BİTTİ</h2>
+                <button id="restart-button">YENİDEN DENE</button>
+            </div>
+            
+             <div id="level-complete-screen" class="overlay hidden">
+                <h2>BÖLÜM GEÇİLDİ!</h2>
+             </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const canvas = document.getElementById('gameCanvas');
+            const ctx = canvas.getContext('2d');
+            const scoreDisplay = document.getElementById('score-display');
+            const livesDisplay = document.getElementById('lives-display');
+            const startScreen = document.getElementById('start-screen');
+            const gameOverScreen = document.getElementById('game-over-screen');
+            const levelCompleteScreen = document.getElementById('level-complete-screen');
+            const startButton = document.getElementById('start-button');
+            const restartButton = document.getElementById('restart-button');
 
-        function endGame() {
-            isGameRunning = false;
-            if (score > highScore) {
-                highScore = score;
-                localStorage.setItem("labirentHighScore", highScore);
-            }
-            setTimeout(() => {
-                canvas.style.display = "none";
-                mobileControls.style.display = "none";
-                menu.style.display = "flex";
-            }, 1000);
-        }
+            canvas.width = 480;
+            canvas.height = 320;
 
-        function showHighScore() {
-            alert("🏆 En Yüksek Skor: " + highScore);
-        }
+            let score, lives, gameState, rightPressed, leftPressed;
+            let animationFrameId;
 
-        // Klavye kontrolleri
-        window.addEventListener("keydown", e => {
-            if (!isGameRunning) return;
-            let newRow = player.row;
-            let newCol = player.col;
-            if (e.key === "ArrowUp" || e.key === "w") {
-                newRow--;
-            } else if (e.key === "ArrowDown" || e.key === "s") {
-                newRow++;
-            } else if (e.key === "ArrowLeft" || e.key === "a") {
-                newCol--;
-            } else if (e.key === "ArrowRight" || e.key === "d") {
-                newCol++;
-            }
-            if (newRow < 0 || newRow >= maze.length || newCol < 0 || newCol >= maze[0].length) {
-                return;
-            }
-            const nextCell = maze[newRow] && maze[newRow][newCol];
-            if (nextCell === "0" || nextCell === "E") {
-                player.row = newRow;
-                player.col = newCol;
-                if (nextCell === "E") {
-                    score += 10;
-                    currentLevel++;
-                    alert(`🎉 Tebrikler! Seviye ${currentLevel} tamamlandı! Skor: ${score}`);
-                    loadLevel(currentLevel);
-                    return;
+            // Oyun Nesneleri
+            const ball = {
+                x: canvas.width / 2,
+                y: canvas.height - 30,
+                dx: 2,
+                dy: -2,
+                radius: 10,
+                draw() {
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = "#fcf6b1";
+                    ctx.fill();
+                    ctx.closePath();
                 }
-                draw();
-            }
-        });
+            };
 
-        // Mobil dokunmatik kontroller
-        document.getElementById("up-btn").addEventListener("click", () => movePlayer("up"));
-        document.getElementById("down-btn").addEventListener("click", () => movePlayer("down"));
-        document.getElementById("left-btn").addEventListener("click", () => movePlayer("left"));
-        document.getElementById("right-btn").addEventListener("click", () => movePlayer("right"));
-
-        // Oyuncu hareket fonksiyonu
-        function movePlayer(direction) {
-            if (!isGameRunning) return;
-            let newRow = player.row;
-            let newCol = player.col;
-            switch (direction) {
-                case "up":
-                    newRow--;
-                    break;
-                case "down":
-                    newRow++;
-                    break;
-                case "left":
-                    newCol--;
-                    break;
-                case "right":
-                    newCol++;
-                    break;
-            }
-            if (newRow < 0 || newRow >= maze.length || newCol < 0 || newCol >= maze[0].length) {
-                return;
-            }
-            const nextCell = maze[newRow] && maze[newRow][newCol];
-            if (nextCell === "0" || nextCell === "E") {
-                player.row = newRow;
-                player.col = newCol;
-                if (nextCell === "E") {
-                    score += 10;
-                    currentLevel++;
-                    alert(`🎉 Tebrikler! Seviye ${currentLevel} tamamlandı! Skor: ${score}`);
-                    loadLevel(currentLevel);
-                    return;
+            const paddle = {
+                height: 10,
+                width: 75,
+                x: (canvas.width - 75) / 2,
+                speed: 7,
+                draw() {
+                    ctx.beginPath();
+                    ctx.rect(this.x, canvas.height - this.height, this.width, this.height);
+                    ctx.fillStyle = "#f5f5f5";
+                    ctx.fill();
+                    ctx.closePath();
                 }
-                draw();
-            }
-        }
+            };
+            
+            // Tuğla Ayarları
+            const brick = {
+                rowCount: 3,
+                columnCount: 5,
+                width: 75,
+                height: 20,
+                padding: 10,
+                offsetTop: 30,
+                offsetLeft: 30,
+                colors: ['#fa4659', '#2eb872', '#f9a828', '#3498db', '#9b59b6']
+            };
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (maze.length === 0) return;
+            let bricks = [];
 
-            const cellW = canvas.width / maze[0].length;
-            const cellH = canvas.height / maze.length;
-
-            for (let r = 0; r < maze.length; r++) {
-                for (let c = 0; c < maze[r].length; c++) {
-                    const cell = maze[r][c];
-                    if (cell === "1") {
-                        ctx.fillStyle = "#333"; // Duvarlar için düz renk
-                        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
-                    } else if (cell === "E") {
-                        ctx.fillStyle = "#ffd700"; // Bitiş için sarı renk
-                        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+            function createBricks() {
+                bricks = [];
+                 for(let c = 0; c < brick.columnCount; c++) {
+                    bricks[c] = [];
+                    for(let r = 0; r < brick.rowCount; r++) {
+                        bricks[c][r] = { x: 0, y: 0, status: 1 };
                     }
                 }
             }
 
-            ctx.fillStyle = "#ff0000"; // Oyuncu için kırmızı renk
-            ctx.beginPath();
-            ctx.arc(
-                player.col * cellW + cellW / 2,
-                player.row * cellH + cellH / 2,
-                Math.min(cellW, cellH) / 3,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
+            function init(isNewGame = true) {
+                if (isNewGame) {
+                    score = 0;
+                    lives = 3;
+                }
+                gameState = 'initializing';
+                ball.x = canvas.width / 2;
+                ball.y = canvas.height - 30;
+                ball.dx = 2;
+                ball.dy = -2;
+                paddle.x = (canvas.width - paddle.width) / 2;
+                createBricks();
+                updateHUD();
+                gameState = 'playing';
+            }
 
-            ctx.fillStyle = "#333";
-            ctx.font = "16px Arial";
-            ctx.fillText("Skor: " + score, 10, 20);
-            ctx.fillText("En Yüksek: " + highScore, 10, 40);
-            ctx.fillText("Level: " + (currentLevel + 1), 10, 60);
-        }
+            function updateHUD() {
+                scoreDisplay.textContent = `SKOR: ${score}`;
+                livesDisplay.textContent = `CAN: ${lives}`;
+            }
+
+            // Çizim Fonksiyonları
+            function drawBall() {
+                ball.draw();
+            }
+
+            function drawPaddle() {
+                paddle.draw();
+            }
+
+            function drawBricks() {
+                for(let c = 0; c < brick.columnCount; c++) {
+                    for(let r = 0; r < brick.rowCount; r++) {
+                        if(bricks[c][r].status === 1) {
+                            const brickX = (c * (brick.width + brick.padding)) + brick.offsetLeft;
+                            const brickY = (r * (brick.height + brick.padding)) + brick.offsetTop;
+                            bricks[c][r].x = brickX;
+                            bricks[c][r].y = brickY;
+                            ctx.beginPath();
+                            ctx.rect(brickX, brickY, brick.width, brick.height);
+                            ctx.fillStyle = brick.colors[c % brick.colors.length];
+                            ctx.fill();
+                            ctx.closePath();
+                        }
+                    }
+                }
+            }
+
+            // Çarpışma Tespiti
+            function collisionDetection() {
+                for(let c=0; c<brick.columnCount; c++) {
+                    for(let r=0; r<brick.rowCount; r++) {
+                        const b = bricks[c][r];
+                        if(b.status === 1) {
+                            if(ball.x > b.x && ball.x < b.x+brick.width && ball.y > b.y && ball.y < b.y+brick.height) {
+                                ball.dy = -ball.dy;
+                                b.status = 0;
+                                score++;
+                                updateHUD();
+                                if(score === brick.rowCount * brick.columnCount) {
+                                    levelComplete();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            function update() {
+                // Duvar çarpışmaları (sol/sağ)
+                if(ball.x + ball.dx > canvas.width - ball.radius || ball.x + ball.dx < ball.radius) {
+                    ball.dx = -ball.dx;
+                }
+                // Duvar çarpışmaları (üst)
+                if(ball.y + ball.dy < ball.radius) {
+                    ball.dy = -ball.dy;
+                } else if(ball.y + ball.dy > canvas.height - ball.radius) {
+                    // Platform çarpışması
+                    if(ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
+                        ball.dy = -ball.dy;
+                    } else {
+                        loseLife();
+                    }
+                }
+
+                // Platform Hareketi
+                if(rightPressed && paddle.x < canvas.width - paddle.width) {
+                    paddle.x += paddle.speed;
+                } else if(leftPressed && paddle.x > 0) {
+                    paddle.x -= paddle.speed;
+                }
+
+                ball.x += ball.dx;
+                ball.y += ball.dy;
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawBricks();
+                drawBall();
+                drawPaddle();
+                collisionDetection();
+            }
+
+            function gameLoop() {
+                if(gameState !== 'playing') return;
+                
+                update();
+                draw();
+                
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+            
+            // Kontroller
+            document.addEventListener("keydown", e => {
+                if(e.key == "Right" || e.key == "ArrowRight") rightPressed = true;
+                else if(e.key == "Left" || e.key == "ArrowLeft") leftPressed = true;
+            }, false);
+
+            document.addEventListener("keyup", e => {
+                if(e.key == "Right" || e.key == "ArrowRight") rightPressed = false;
+                else if(e.key == "Left" || e.key == "ArrowLeft") leftPressed = false;
+            }, false);
+            
+            document.addEventListener("mousemove", e => {
+                const relativeX = e.clientX - canvas.getBoundingClientRect().left;
+                if(relativeX > 0 && relativeX < canvas.width) {
+                    paddle.x = relativeX - paddle.width/2;
+                }
+            }, false);
+
+            function loseLife() {
+                lives--;
+                updateHUD();
+                if(lives <= 0) {
+                    gameOver();
+                } else {
+                    ball.x = canvas.width/2;
+                    ball.y = canvas.height-30;
+                    ball.dx = 2;
+                    ball.dy = -2;
+                    paddle.x = (canvas.width-paddle.width)/2;
+                }
+            }
+            
+            function gameOver() {
+                gameState = 'gameOver';
+                gameOverScreen.classList.remove('hidden');
+                cancelAnimationFrame(animationFrameId);
+            }
+
+            function levelComplete() {
+                 gameState = 'paused';
+                 levelCompleteScreen.classList.remove('hidden');
+                 cancelAnimationFrame(animationFrameId);
+                 setTimeout(() => { 
+                    levelCompleteScreen.classList.add('hidden');
+                    // Geliştirme notu: Sonraki level'lar için buraya kod eklenebilir.
+                    // Şimdilik oyunu yeniden başlatıyoruz.
+                    init(false); 
+                    gameLoop();
+                }, 3000);
+            }
+
+
+            function startGame() {
+                startScreen.classList.add('hidden');
+                gameOverScreen.classList.add('hidden');
+                init(true);
+                if(animationFrameId) cancelAnimationFrame(animationFrameId);
+                gameLoop();
+            }
+            
+            startButton.addEventListener('click', startGame);
+            restartButton.addEventListener('click', startGame);
+        });
     </script>
 </body>
 </html>
+
