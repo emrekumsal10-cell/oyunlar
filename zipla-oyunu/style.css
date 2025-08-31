@@ -60,31 +60,35 @@ button:hover {
     bottom: 0;
     left: 60px;
     border-radius: 50%;
+    z-index: 10; /* Karakterin engellerin üzerinde olmasını sağlar */
 }
 
-#block {
-    width: 40px;
-    height: 40px;
+/* Yeni engeller için genel stil */
+.obstacle {
     background: #4caf50;
     position: absolute;
     bottom: 0;
-    right: -40px;
-    animation: block 2s linear infinite;
     border-radius: 10px;
 }
 
-@keyframes block {
-    0% {
-        right: -40px;
-    }
+/* Farklı engel boyutları */
+.obstacle-small {
+    width: 30px;
+    height: 30px;
+}
 
-    100% {
-        right: 100%;
-    }
+.obstacle-medium {
+    width: 40px;
+    height: 60px; /* Daha uzun engel */
+}
+
+.obstacle-large {
+    width: 50px;
+    height: 40px;
 }
 
 .jump {
-    animation: jump 0.5s ease-out; /* Added ease-out for a smoother jump */
+    animation: jump 0.5s ease-out;
 }
 
 @keyframes jump {
