@@ -21,12 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Oyun Sabitleri (Ayarları buradan kolayca değiştir)
     const PLAYER_WIDTH = 30;
     const PLAYER_HEIGHT = 30;
-    const GRAVITY = 0.25; // Yerçekimini düşürdük, daha yavaş düşecek
+    const GRAVITY = 0.30; // Yerçekimini düşürdük, daha yavaş düşecek
     const LIFT = -6.5;    // Zıplama gücünü yerçekimine göre yeniden ayarladık
     const PIPE_WIDTH = 80;
-    const PIPE_GAP = 220; // Borular arası boşluk
+    const PIPE_GAP = 200; // Borular arası boşluk
     const PIPE_SPAWN_INTERVAL = 180; // Kaç karede bir yeni boru geleceği
-    const PIPE_SPEED = 2.5;
+    const PIPE_SPEED = 4;
 
     // Oyun Değişkenleri
     let player, pipes, score, highScore, frameCount, isGameOver;
