@@ -64,6 +64,39 @@
             border-radius: 10px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
         }
+        .mobile-controls {
+            display: none; /* Varsayılan olarak gizli */
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+        }
+        .mobile-controls-row {
+            display: flex;
+            justify-content: center;
+        }
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            margin: 5px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent; /* Mobil tıklama efektini kaldırır */
+        }
+        /* Sadece küçük ekranlarda mobil kontrolleri göster */
+        @media (max-width: 768px) {
+            .mobile-controls {
+                display: block;
+            }
+        }
     </style>
 </head>
 <body>
@@ -73,11 +106,22 @@
         <button onclick="showHighScore()">En Yüksek Skor</button>
     </div>
     <canvas id="gameCanvas"></canvas>
+    <div id="mobile-controls" class="mobile-controls">
+        <div class="mobile-controls-row">
+            <div class="control-btn" id="up-btn">⬆️</div>
+        </div>
+        <div class="mobile-controls-row">
+            <div class="control-btn" id="left-btn">⬅️</div>
+            <div class="control-btn" id="down-btn">⬇️</div>
+            <div class="control-btn" id="right-btn">➡️</div>
+        </div>
+    </div>
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const menu = document.getElementById("menu");
         const startButton = document.getElementById("startButton");
+        const mobileControls = document.getElementById("mobile-controls");
 
         const levels = [
             [
@@ -189,6 +233,7 @@
         function startGame() {
             menu.style.display = "none";
             canvas.style.display = "block";
+            mobileControls.style.display = "block";
             score = 0;
             currentLevel = 0;
             isGameRunning = true;
@@ -206,6 +251,7 @@
             }
             setTimeout(() => {
                 canvas.style.display = "none";
+                mobileControls.style.display = "none";
                 menu.style.display = "flex";
             }, 1000);
         }
@@ -214,11 +260,11 @@
             alert("🏆 En Yüksek Skor: " + highScore);
         }
 
+        // Klavye kontrolleri
         window.addEventListener("keydown", e => {
             if (!isGameRunning) return;
             let newRow = player.row;
             let newCol = player.col;
-
             if (e.key === "ArrowUp" || e.key === "w") {
                 newRow--;
             } else if (e.key === "ArrowDown" || e.key === "s") {
@@ -228,13 +274,10 @@
             } else if (e.key === "ArrowRight" || e.key === "d") {
                 newCol++;
             }
-
             if (newRow < 0 || newRow >= maze.length || newCol < 0 || newCol >= maze[0].length) {
                 return;
             }
-
             const nextCell = maze[newRow] && maze[newRow][newCol];
-
             if (nextCell === "0" || nextCell === "E") {
                 player.row = newRow;
                 player.col = newCol;
@@ -248,6 +291,49 @@
                 draw();
             }
         });
+
+        // Mobil dokunmatik kontroller
+        document.getElementById("up-btn").addEventListener("click", () => movePlayer("up"));
+        document.getElementById("down-btn").addEventListener("click", () => movePlayer("down"));
+        document.getElementById("left-btn").addEventListener("click", () => movePlayer("left"));
+        document.getElementById("right-btn").addEventListener("click", () => movePlayer("right"));
+
+        // Oyuncu hareket fonksiyonu
+        function movePlayer(direction) {
+            if (!isGameRunning) return;
+            let newRow = player.row;
+            let newCol = player.col;
+            switch (direction) {
+                case "up":
+                    newRow--;
+                    break;
+                case "down":
+                    newRow++;
+                    break;
+                case "left":
+                    newCol--;
+                    break;
+                case "right":
+                    newCol++;
+                    break;
+            }
+            if (newRow < 0 || newRow >= maze.length || newCol < 0 || newCol >= maze[0].length) {
+                return;
+            }
+            const nextCell = maze[newRow] && maze[newRow][newCol];
+            if (nextCell === "0" || nextCell === "E") {
+                player.row = newRow;
+                player.col = newCol;
+                if (nextCell === "E") {
+                    score += 10;
+                    currentLevel++;
+                    alert(`🎉 Tebrikler! Seviye ${currentLevel} tamamlandı! Skor: ${score}`);
+                    loadLevel(currentLevel);
+                    return;
+                }
+                draw();
+            }
+        }
 
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
