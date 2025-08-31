@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // --- HTML Elementleri ---
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
     const scoreDisplay = document.getElementById('score-display');
@@ -9,15 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const levelCompleteScreen = document.getElementById('level-complete-screen');
     const startButton = document.getElementById('start-button');
     const restartButton = document.getElementById('restart-button');
-    
     const btnUp = document.getElementById('btn-up');
     const btnDown = document.getElementById('btn-down');
     const btnLeft = document.getElementById('btn-left');
     const btnRight = document.getElementById('btn-right');
 
     const TILE_SIZE = 20;
+    // Harita Sembolleri: 1=Duvar, 0=Yem, 2=Boşluk, 3=Güç Yemi, 4=Hayalet Yuvası
     const levels = [
-        [ // Level 1 Haritası
+        [ // Level 1 Haritası - HATADAN ARINDIRILDI
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
@@ -32,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
             [2,2,2,2,2,2,0,2,2,2,1,4,4,4,4,4,4,1,2,2,2,0,2,2,2,2,2,2],
             [1,1,1,1,1,1,0,1,1,2,1,4,4,4,4,4,4,1,2,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1],
-_            [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
             [1,3,0,0,1,1,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,1,1,0,0,3,1],
@@ -67,24 +68,36 @@ _            [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
             ctx.lineTo(0, 0); ctx.fill(); ctx.restore();
         }
         update() {
-            const onGrid = (this.x % TILE_SIZE < this.speed) && (this.y % TILE_SIZE < this.speed);
-            if (onGrid) {
-                const nextCol = Math.round(this.x / TILE_SIZE) + this.nextDir.x;
-                const nextRow = Math.round(this.y / TILE_SIZE) + this.nextDir.y;
+            // DÜZELTİLMİŞ HAREKET MANTIĞI
+            const isAlignedX = Math.abs(this.x % TILE_SIZE) < this.speed;
+            const isAlignedY = Math.abs(this.y % TILE_SIZE) < this.speed;
+
+            if (isAlignedX && isAlignedY) {
+                this.x = Math.round(this.x / TILE_SIZE) * TILE_SIZE;
+                this.y = Math.round(this.y / TILE_SIZE) * TILE_SIZE;
+
+                const nextCol = this.x / TILE_SIZE + this.nextDir.x;
+                const nextRow = this.y / TILE_SIZE + this.nextDir.y;
                 if (!this.isWall(nextCol, nextRow)) { this.dir = { ...this.nextDir }; }
             }
+            
             const currentCol = Math.round(this.x / TILE_SIZE) + this.dir.x;
             const currentRow = Math.round(this.y / TILE_SIZE) + this.dir.y;
-            if (onGrid && this.isWall(currentCol, currentRow)) { this.dir = { x: 0, y: 0 }; }
+            if (this.isWall(currentCol, currentRow) && (this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0)) {
+                this.dir = { x: 0, y: 0 };
+            }
+            
             this.x += this.dir.x * this.speed; this.y += this.dir.y * this.speed;
             this.handleTunnel();
+
             const col = Math.round(this.x / TILE_SIZE), row = Math.round(this.y / TILE_SIZE);
-            if (map[row][col] === 0) { map[row][col] = 2; score += 10; dotCount--; }
-            else if (map[row][col] === 3) { map[row][col] = 2; score += 50; dotCount--; frightenGhosts(); }
+            if (map[row] && map[row][col] === 0) { map[row][col] = 2; score += 10; dotCount--; }
+            else if (map[row] && map[row][col] === 3) { map[row][col] = 2; score += 50; dotCount--; frightenGhosts(); }
         }
         reset() { this.x = this.startPos.x; this.y = this.startPos.y; this.dir = { x: 0, y: 0 }; this.nextDir = { x: 0, y: 0 }; }
     }
-
+    
+    // Hayalet Sınıfı (Öncekiyle aynı, sorunsuz)
     class Ghost extends Entity {
         constructor(x, y, color) { super(x, y, 0); this.color = color; this.mode = 'scatter'; this.startPos = { x, y }; }
         draw(ctx) {
@@ -103,10 +116,10 @@ _            [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
             }
         }
         update() {
-            const onGrid = (this.x % TILE_SIZE < this.speed) && (this.y % TILE_SIZE < this.speed);
+            const onGrid = (Math.abs(this.x % TILE_SIZE) < this.speed) && (Math.abs(this.y % TILE_SIZE) < this.speed);
             if (this.mode === 'eaten') {
                 const dx = this.startPos.x - this.x, dy = this.startPos.y - this.y;
-                if (Math.abs(dx) < this.speed && Math.abs(dy) < this.speed) { this.x = this.startPos.x; this.y = this.startPos.y; this.mode = 'chase'; return; }
+                if (Math.hypot(dx, dy) < this.speed) { this.x = this.startPos.x; this.y = this.startPos.y; this.mode = 'chase'; return; }
                 const angle = Math.atan2(dy, dx); this.dir = {x: Math.cos(angle), y: Math.sin(angle)};
             } else if (onGrid) { this.dir = this.getBestMove(); }
             this.x += this.dir.x * this.speed; this.y += this.dir.y * this.speed;
@@ -130,6 +143,7 @@ _            [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
         reset() { this.x = this.startPos.x; this.y = this.startPos.y; this.mode = 'chase'; }
     }
 
+    // Oyunun geri kalanı (init, gameLoop, draw vs.)
     function init(isNewGame = true) {
         if (isNewGame) { score = 0; lives = 3; currentLevel = 0; }
         gameState = 'initializing';
@@ -146,7 +160,6 @@ _            [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
         updateLivesDisplay(); scoreDisplay.textContent = `SKOR: ${score}`;
         gameState = 'playing';
     }
-
     function gameLoop() {
         if (gameState !== 'playing') return;
         update(); draw();
