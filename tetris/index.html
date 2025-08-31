@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tetris</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>Tetris</h1>
+        <div class="score-display">Skor: <span id="score">0</span></div>
+        
+        <div class="game-and-controls-container">
+            <canvas id="gameCanvas" width="300" height="600"></canvas>
+        </div>
+
+        <div class="controls-bottom">
+            <button id="left-btn" class="control-btn">&#9664;</button>
+            <button id="rotate-btn" class="control-btn">&#8635;</button>
+            <button id="right-btn" class="control-btn">&#9654;</button>
+            <button id="down-btn" class="control-btn">&#9660;</button>
+        </div>
+
+        <div class="game-actions">
+            <button id="pause-btn">Duraklat</button>
+            <button id="new-game-btn">Yeni Oyun</button>
+        </div>
+    </div>
+
+    <div id="main-menu" class="menu-overlay">
+        <div class="menu-content">
+            <h2>Tetris</h2>
+            <button id="start-game-btn">Yeni Oyun</button>
+            <div class="high-scores-section">
+                <h3>Yüksek Skorlar</h3>
+                <ul id="high-score-list"></ul>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

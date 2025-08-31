@@ -1,0 +1,61 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Yüksekliği en az ekran yüksekliğinde tutar */
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-color: #2c3e50;
+    color: white;
+    box-sizing: border-box; /* padding ve border'ın genişliğe dahil olmasını sağlar */
+    padding: 20px; /* Küçük ekranlarda içerik kenara yapışmasın diye ekledim */
+}
+
+.menu-container {
+    text-align: center;
+    padding: 20px;
+    background-color: #34495e;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 100%; /* Ekran genişliğinin tamamını kullanır */
+    max-width: 600px; /* Çok geniş ekranlarda aşırı büyümesini engeller */
+    box-sizing: border-box;
+}
+
+h1 {
+    font-size: 1.5em; /* Mobil cihazlarda daha küçük font boyutu */
+    margin-bottom: 20px;
+    color: black;
+}
+
+.game-options {
+    display: flex;
+    flex-direction: column; /* Dikey olarak sıralanır */
+    gap: 15px; /* Oyun seçenekleri arasındaki boşluğu azaltır */
+    padding: 0; /* Ekstra boşlukları kaldırır */
+    list-style: none; /* Liste işaretlerini kaldırır */
+}
+
+.game-link {
+    text-decoration: none;
+    color: white;
+    padding: 20px; /* Dokunmatik alanı büyütmek için padding'i artırdım */
+    background-color: #e67e22;
+    border-radius: 8px;
+    transition: transform 0.2s, background-color 0.2s;
+    width: 100%; /* Her bir bağlantının tüm alanı kaplamasını sağlar */
+    box-sizing: border-box;
+}
+
+.game-link h2 {
+    margin: 0;
+    font-size: 1.2em; /* Mobil için daha uygun font boyutu */
+}
+
+/* Hover efektlerini sadece dokunmatik olmayan cihazlar için etkinleştirme */
+@media (hover: hover) {
+    .game-link:hover {
+        background-color: #d35400;
+        transform: translateY(-5px);
+    }
+}

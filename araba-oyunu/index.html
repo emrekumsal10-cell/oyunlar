@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaçış Yarışı</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <div class="game-container">
+            <canvas id="gameCanvas"></canvas>
+            <div id="main-menu" class="menu-overlay">
+                <div class="menu-content">
+                    <h2>Kaçış Yarışı</h2>
+                    <h3>Araba Rengi Seç</h3>
+                    <div class="car-selection">
+                        <button class="car-option" data-car="yellow"></button>
+                        <button class="car-option" data-car="blue"></button>
+                        <button class="car-option" data-car="red"></button>
+                    </div>
+                    <h3>Zorluk Seç</h3>
+                    <div class="difficulty-selection">
+                        <button class="difficulty-option selected" data-difficulty="easy">Kolay</button>
+                        <button class="difficulty-option" data-difficulty="normal">Normal</button>
+                        <button class="difficulty-option" data-difficulty="hard">Zor</button>
+                    </div>
+                    <button id="startGameBtn">Oyuna Başla</button>
+                </div>
+            </div>
+            <div id="gameOverMenu" class="menu-overlay hidden">
+                <div class="menu-content">
+                    <h2>Oyun Bitti!</h2>
+                    <p>Skorun: <span id="finalScore">0</span></p>
+                    <button id="restartGameBtn">Yeniden Oyna</button>
+                </div>
+            </div>
+            <div id="score-display">Skor: <span id="score">0</span></div>
+            <button id="pause-btn" class="hidden">Duraklat</button>
+        </div>
+
+        <div class="mobile-controls hidden">
+            <button id="mobile-left-btn">&#9664;</button>
+            <button id="mobile-right-btn">&#9654;</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

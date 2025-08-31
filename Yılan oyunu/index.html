@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Klasik Yılan Oyunu</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #111;
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      overflow: hidden; /* Sayfa kaymasını engelle */
+      touch-action: none; /* Dokunmatik kaydırmayı devre dışı bırak */
+    }
+
+    canvas {
+      background: #222;
+      border: 2px solid #0f0;
+      border-radius: 8px;
+      margin-top: 15px;
+      touch-action: none;
+    }
+
+    #menu, #game-over {
+      text-align: center;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #0f0;
+      color: #111;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #0c0;
+    }
+
+    #game-container {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- Başlangıç Menüsü -->
+  <div id="menu">
+    <h1>🐍 Klasik Yılan Oyunu</h1>
+    <label for="difficulty">Zorluk Seç:</label>
+    <select id="difficulty">
+      <option value="150">Kolay</option>
+      <option value="100" selected>Orta</option>
+      <option value="70">Zor</option>
+    </select><br>
+    <button onclick="startGame()">Başla</button>
+  </div>
+
+  <!-- Oyun Alanı -->
+  <div id="game-container">
+    <canvas id="gameCanvas" width="400" height="400"></canvas>
+    <p>Skor: <span id="score">0</span></p>
+    <button onclick="restartGame()">Yeniden Başla</button>
+  </div>
+
+  <!-- Oyun Bitti -->
+  <div id="game-over" style="display:none;">
+    <h2>Oyun Bitti! 😢</h2>
+    <p>Skorun: <span id="finalScore">0</span></p>
+    <button onclick="goMenu()">Menüye Dön</button>
+  </div>
+
+  <!-- Sesler -->
+  <audio id="eatSound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
+  <audio id="gameOverSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+  <audio id="startSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+
+  <script>
+    // Kaydırmayı engelle
+    document.body.addEventListener('touchmove', function(e){
+      e.preventDefault();
+    }, { passive: false });
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let box = 20;
+    let snake;
+    let direction;
+    let food;
+    let score;
+    let game;
+    let speed = 100;
+
+    const eatSound = document.getElementById("eatSound");
+    const gameOverSound = document.getElementById("gameOverSound");
+    const startSound = document.getElementById("startSound");
+
+    function startGame() {
+      startSound.play();
+      document.getElementById("menu").style.display = "none";
+      document.getElementById("game-over").style.display = "none";
+      document.getElementById("game-container").style.display = "flex";
+
+      speed = parseInt(document.getElementById("difficulty").value);
+
+      snake = [{x: 9 * box, y: 10 * box}];
+      direction = null;
+      food = spawnFood();
+      score = 0;
+      document.getElementById("score").textContent = score;
+
+      clearInterval(game);
+      game = setInterval(draw, speed);
+    }
+
+    function spawnFood() {
+      return {
+        x: Math.floor(Math.random() * 19) * box,
+        y: Math.floor(Math.random() * 19) * box
+      };
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    function goMenu() {
+      document.getElementById("game-container").style.display = "none";
+      document.getElementById("game-over").style.display = "none";
+      document.getElementById("menu").style.display = "block";
+      clearInterval(game);
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
+      else if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
+      else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
+      else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
+    });
+
+    // Mobil kaydırma kontrolleri
+    document.addEventListener("touchstart", handleTouchStart, false);
+    document.addEventListener("touchend", handleTouchEnd, false);
+    let xDown = null;
+    let yDown = null;
+
+    function handleTouchStart(evt) {
+      const firstTouch = evt.touches[0];
+      xDown = firstTouch.clientX;
+      yDown = firstTouch.clientY;
+    }
+
+    function handleTouchEnd(evt) {
+      if (!xDown || !yDown) return;
+      let xUp = evt.changedTouches[0].clientX;
+      let yUp = evt.changedTouches[0].clientY;
+
+      let xDiff = xDown - xUp;
+      let yDiff = yDown - yUp;
+
+      if (Math.abs(xDiff) > Math.abs(yDiff)) {
+        if (xDiff > 0 && direction !== "RIGHT") direction = "LEFT";
+        else if (xDiff < 0 && direction !== "LEFT") direction = "RIGHT";
+      } else {
+        if (yDiff > 0 && direction !== "DOWN") direction = "UP";
+        else if (yDiff < 0 && direction !== "UP") direction = "DOWN";
+      }
+      xDown = null;
+      yDown = null;
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Yılanı çiz
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "lime" : "green";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeStyle = "#111";
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
+      }
+
+      // Yemi çiz
+      ctx.fillStyle = "red";
+      ctx.fillRect(food.x, food.y, box, box);
+
+      let snakeX = snake[0].x;
+      let snakeY = snake[0].y;
+
+      if (direction === "LEFT") snakeX -= box;
+      if (direction === "UP") snakeY -= box;
+      if (direction === "RIGHT") snakeX += box;
+      if (direction === "DOWN") snakeY += box;
+
+      if (snakeX === food.x && snakeY === food.y) {
+        score++;
+        document.getElementById("score").textContent = score;
+        eatSound.play();
+        food = spawnFood();
+      } else {
+        snake.pop();
+      }
+
+      let newHead = {x: snakeX, y: snakeY};
+
+      if (
+        snakeX < 0 || snakeY < 0 || snakeX >= canvas.width || snakeY >= canvas.height ||
+        collision(newHead, snake)
+      ) {
+        clearInterval(game);
+        gameOverSound.play();
+        document.getElementById("finalScore").textContent = score;
+        document.getElementById("game-container").style.display = "none";
+        document.getElementById("game-over").style.display = "block";
+      }
+
+      snake.unshift(newHead);
+    }
+
+    function collision(head, array) {
+      for (let i = 0; i < array.length; i++) {
+        if (head.x === array[i].x && head.y === array[i].y) return true;
+      }
+      return false;
+    }
+  </script>
+</body>
+</html>
