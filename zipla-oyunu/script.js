@@ -19,11 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.height = canvasHeight;
 
     // Oyun Sabitleri (Ayarları buradan kolayca değiştir)
-    const PLAYER_WIDTH = 40;
-    const PLAYER_HEIGHT = 40;
-    const GRAVITY = 0.4;
-    const LIFT = -8; // Zıplama gücü
-    const PIPE_WIDTH = 80;
+const PLAYER_WIDTH = 40;
+const PLAYER_HEIGHT = 40;
+const GRAVITY = 0.25; // Yerçekimini düşürdük, daha yavaş düşecek
+const LIFT = -6.5;    // Zıplama gücünü yerçekimine göre yeniden ayarladık
+const PIPE_WIDTH = 80;
     const PIPE_GAP = 220; // Borular arası boşluk
     const PIPE_SPAWN_INTERVAL = 120; // Kaç karede bir yeni boru geleceği
     const PIPE_SPEED = 3;
