@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const PIPE_WIDTH = 80;
     const PIPE_GAP = 220; // Borular arası boşluk
     const PIPE_SPAWN_INTERVAL = 180; // Kaç karede bir yeni boru geleceği
-    const PIPE_SPEED = 2;
+    const PIPE_SPEED = 2.5;
 
     // Oyun Değişkenleri
     let player, pipes, score, highScore, frameCount, isGameOver;
