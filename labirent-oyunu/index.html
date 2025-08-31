@@ -316,12 +316,40 @@
                 else if(e.key == "Left" || e.key == "ArrowLeft") leftPressed = false;
             }, false);
             
-            document.addEventListener("mousemove", e => {
-                const relativeX = e.clientX - canvas.getBoundingClientRect().left;
-                if(relativeX > 0 && relativeX < canvas.width) {
-                    paddle.x = relativeX - paddle.width/2;
+            // DOKUNMATİK VE FARE KONTROLÜ İÇİN GELİŞTİRİLMİŞ İŞLEV
+            function handlePointerMove(clientX) {
+                const rect = canvas.getBoundingClientRect();
+                // Tuvalin gerçek boyutu ile ekranda görünen boyutu arasındaki oranı hesapla
+                const scaleX = canvas.width / rect.width; 
+                let relativeX = (clientX - rect.left) * scaleX;
+
+                paddle.x = relativeX - paddle.width / 2;
+
+                // Platformun tuval dışına çıkmasını engelle
+                if (paddle.x < 0) {
+                    paddle.x = 0;
                 }
+                if (paddle.x + paddle.width > canvas.width) {
+                    paddle.x = canvas.width - paddle.width;
+                }
+            }
+
+            // Fare Kontrolü
+            document.addEventListener("mousemove", e => {
+                handlePointerMove(e.clientX);
             }, false);
+            
+            // Dokunmatik Kontroller (touchstart ve touchmove)
+            document.addEventListener("touchstart", e => {
+                // Varsayılan dokunma eylemlerini (kaydırma, yakınlaştırma gibi) engelle
+                e.preventDefault(); 
+                handlePointerMove(e.touches[0].clientX);
+            }, { passive: false });
+
+            document.addEventListener("touchmove", e => {
+                e.preventDefault();
+                handlePointerMove(e.touches[0].clientX);
+            }, { passive: false });
 
             function loseLife() {
                 lives--;
@@ -371,4 +399,5 @@
     </script>
 </body>
 </html>
+
 
