@@ -1,6 +1,43 @@
-<!DOCTYPE html><html lang="tr"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Taş Kağıt Makas</title><link rel="stylesheet" href="style.css"></head><body>
-<h1>Taş Kağıt Makas</h1><div id="score">Skor: 0</div>
-<div class="controls"><button onclick="play('taş')">Taş</button><button onclick="play('kağıt')">Kağıt</button><button onclick="play('makas')">Makas</button><button onclick="goHome()">Ana Menü</button></div>
-<div id="result"></div><script src="script.js"></script></body></html>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Pac-Man</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-container">
+        <h1>PAC-MAN</h1>
+        <div class="hud">
+            <div id="score-display">SKOR: 0</div>
+            <div id="level-display">LEVEL: 1</div>
+        </div>
+        
+        <div class="canvas-wrapper">
+            <canvas id="gameCanvas"></canvas>
+            
+            <div id="start-screen" class="overlay">
+                <h2>HAZIR MISIN?</h2>
+                <button id="start-button">BAŞLA</button>
+            </div>
+            
+            <div id="game-over-screen" class="overlay hidden">
+                <h2>OYUN BİTTİ</h2>
+                <button id="restart-button">YENİDEN BAŞLA</button>
+            </div>
+            
+             <div id="level-complete-screen" class="overlay hidden">
+                <h2>LEVEL GEÇİLDİ!</h2>
+            </div>
+        </div>
+        
+        <div id="lives-display"></div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
