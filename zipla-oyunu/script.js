@@ -4,18 +4,11 @@ const scoreDisplay = document.getElementById("score");
 
 let paused = false;
 let score = 0;
-let gameSpeed = 2; // Başlangıç animasyon süresi (saniye)
+let gameSpeed = 2; // Initial obstacle animation speed (seconds)
+let lastObstacleTime = 0;
+let minObstacleGap = 1500; // Minimum gap between obstacles in milliseconds
 
-// Kontrolleri ayarlar
-function setupControls(action) {
-  document.addEventListener("keydown", e => {
-    if (e.code === "Space" || e.code === "ArrowUp") action();
-  });
-  document.addEventListener("click", () => action());
-  document.addEventListener("touchstart", () => action());
-}
-
-// Oyunu duraklatır/devam ettirir
+// Toggles game pause state
 function togglePause() {
     paused = !paused;
     const obstacles = document.querySelectorAll(".obstacle");
@@ -24,14 +17,14 @@ function togglePause() {
     });
 }
 
-// Ana menüye döner
+// Redirects to home (for example, a main menu)
 function goHome() {
     // window.location.href = "../index.html";
     alert("Ana menüye dönülüyor...");
-    location.reload(); // Şimdilik oyunu yeniden başlatır
+    location.reload();
 }
 
-// Karakterin zıplamasını sağlar
+// Makes the character jump
 function jump() {
     if (character.classList.contains("jump") || paused) return;
     character.classList.add("jump");
@@ -40,35 +33,48 @@ function jump() {
     }, 500);
 }
 
-// Rastgele bir engel oluşturur ve oyuna ekler
+// Creates an obstacle
 function createObstacle() {
     if (paused) return;
 
     const obstacle = document.createElement("div");
     obstacle.classList.add("obstacle");
 
-    const obstacleTypes = ["obstacle-type-1", "obstacle-type-2", "obstacle-type-3"];
-    const randomType = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
-    obstacle.classList.add(randomType);
+    const isTopObstacle = Math.random() > 0.5;
+    const height = Math.floor(Math.random() * 80) + 40; // Random height between 40px and 120px
+    obstacle.style.height = `${height}px`;
+    obstacle.style.width = `40px`;
     
-    // Hızı ayarlar
-    obstacle.style.animationDuration = gameSpeed + "s";
-    
+    if (isTopObstacle) {
+        obstacle.classList.add("obstacle-top");
+        obstacle.style.bottom = `${gameArea.clientHeight - height}px`;
+    } else {
+        obstacle.style.bottom = "0px";
+    }
+
+    obstacle.style.animationDuration = `${gameSpeed}s`;
     gameArea.appendChild(obstacle);
 }
 
-// Çarpışma kontrolü yapar ve puanı günceller
+// Checks for collisions and updates score
 function checkGameStatus() {
     if (paused) return;
+    
+    // Create new obstacle if gap is sufficient
+    const now = Date.now();
+    if (now - lastObstacleTime > minObstacleGap) {
+        createObstacle();
+        lastObstacleTime = now;
+        minObstacleGap = Math.max(700, 1500 - score * 20); // Decrease gap as score increases
+    }
 
-    const obstacles = document.querySelectorAll(".obstacle");
     const characterRect = character.getBoundingClientRect();
-    const gameRect = gameArea.getBoundingClientRect();
+    const obstacles = document.querySelectorAll(".obstacle");
 
     obstacles.forEach(obs => {
         const obsRect = obs.getBoundingClientRect();
-
-        // Çarpışma kontrolü
+        
+        // Check for collision
         if (
             characterRect.right > obsRect.left &&
             characterRect.left < obsRect.right &&
@@ -78,28 +84,35 @@ function checkGameStatus() {
             gameOver();
         }
 
-        // Engel ekranı geçtiyse puanı artır
-        if (obsRect.right < gameRect.left) {
+        // Check if obstacle has passed
+        if (obs.passed === undefined && obsRect.right < characterRect.left) {
             score++;
-            scoreDisplay.textContent = "Skor: " + score;
-            obs.remove(); // Engeli temizle
-
-            // Skora göre hızı artır
-            if (score % 5 === 0 && gameSpeed > 1) { // 5'in katlarında hızı artır
-                gameSpeed -= 0.1; // Hızı artırmak için süreyi azalt
+            scoreDisplay.textContent = `Skor: ${score}`;
+            obs.passed = true;
+            
+            // Speed up the game every 5 points
+            if (score % 5 === 0 && gameSpeed > 1) {
+                gameSpeed -= 0.1;
+                document.querySelectorAll(".obstacle").forEach(o => {
+                    o.style.animationDuration = `${gameSpeed}s`;
+                });
             }
+        }
+        
+        // Remove obstacles that are off-screen
+        if (obsRect.right < 0) {
+            obs.remove();
         }
     });
 }
 
-// Oyun bittiğinde yapılacaklar
+// Game over logic
 function gameOver() {
-    togglePause(); // Oyunu duraklat
-    alert("Oyun bitti! Skor: " + score);
+    togglePause();
+    alert(`Oyun bitti! Skor: ${score}`);
     location.reload();
 }
 
-// Oyunu başlat
+// Initialize game
 setupControls(jump);
-setInterval(createObstacle, 2000); // Her 2 saniyede yeni engel oluştur
-setInterval(checkGameStatus, 50); // Her 50ms'de çarpışma ve puan kontrolü yap
+setInterval(checkGameStatus, 50);
