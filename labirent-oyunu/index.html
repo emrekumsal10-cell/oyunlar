@@ -10,15 +10,13 @@
     <style>
         :root {
             --bg-color: #0d0221;
-            --paddle-color: #f5f5f5;
-            --ball-color: #fcf6b1;
-            --brick-colors: ['#fa4659', '#2eb872', '#f9a828', '#3498db', '#9b59b6'];
             --text-color: #FFFFFF;
-            --font-family: 'Press Start 2P', cursive;
+            --paddle-color: #fa4659;
+            --ball-color: #fcf6b1;
+            --font-family: 'Press+Start+2P', cursive;
+            --border-color: #4a4a4a;
         }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        * { padding: 0; margin: 0; box-sizing: border-box; }
         body {
             display: flex;
             justify-content: center;
@@ -30,55 +28,49 @@
             padding: 10px;
             touch-action: manipulation;
         }
-
         .game-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 1rem;
             width: 100%;
-            max-width: 600px; /* Genişletildi */
+            max-width: 600px;
         }
-
-        h1 { 
-            color: var(--text-color); 
-            text-shadow: 2px 2px 0px #fa4659, 4px 4px 0px #2eb872;
+        h1 {
+            color: var(--text-color);
+            text-shadow: 2px 2px 0px var(--paddle-color);
         }
-
         .hud {
             display: flex;
             justify-content: space-between;
             width: 100%;
             font-size: 1rem;
         }
-
-        .canvas-wrapper { 
-            position: relative; 
-            width: 100%; 
-            box-shadow: 0 0 25px rgba(255, 255, 255, 0.2);
-            border: 2px solid #fff;
-            border-radius: 8px;
+        .canvas-wrapper {
+            position: relative;
+            width: 100%;
+            border: 3px solid var(--border-color);
+            border-radius: 5px;
             overflow: hidden;
         }
-        canvas { 
-            width: 100%; 
-            height: auto; 
-            background: linear-gradient(180deg, #0d0221 0%, #1a0a3d 100%);
-            display: block; 
+        canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            background: #1a0a3d;
         }
-
         .overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(13, 2, 33, 0.8);
+            background-color: rgba(13, 2, 33, 0.85);
             display: flex; flex-direction: column;
             justify-content: center; align-items: center; text-align: center;
             color: white; z-index: 10;
         }
         .overlay.hidden { display: none; }
-        .overlay h2 { font-size: 2rem; margin-bottom: 1.5rem; line-height: 1.2; text-shadow: 3px 3px 0px var(--paddle-color); }
+        .overlay h2 { font-size: 1.8rem; margin-bottom: 1.5rem; line-height: 1.2; }
         .overlay button {
             font-family: var(--font-family); font-size: 1rem; padding: 1rem 2rem;
-            background-color: #fa4659; color: var(--text-color); border: 2px solid var(--text-color); cursor: pointer;
+            background-color: var(--paddle-color); color: var(--text-color); border: 2px solid var(--text-color); cursor: pointer;
             box-shadow: 4px 4px 0px var(--text-color); transition: all 0.2s;
             border-radius: 8px;
         }
@@ -86,7 +78,6 @@
             transform: translate(2px, 2px);
             box-shadow: 2px 2px 0px var(--text-color);
         }
-
         @media (max-width: 600px) {
             .hud, h1 { font-size: 0.8rem; }
             .overlay h2 { font-size: 1.5rem; }
@@ -100,139 +91,91 @@
             <div id="score-display">SKOR: 0</div>
             <div id="lives-display">CAN: 3</div>
         </div>
-        
         <div class="canvas-wrapper">
-            <canvas id="gameCanvas"></canvas>
-            
+            <canvas id="gameCanvas" width="480" height="320"></canvas>
             <div id="start-screen" class="overlay">
                 <h2>BAŞLAMAYA HAZIR MISIN?</h2>
                 <button id="start-button">BAŞLA</button>
             </div>
-            
             <div id="game-over-screen" class="overlay hidden">
                 <h2>OYUN BİTTİ</h2>
-                <button id="restart-button">YENİDEN DENE</button>
+                <button id="restart-button">YENİDEN BAŞLA</button>
             </div>
-            
-             <div id="level-complete-screen" class="overlay hidden">
-                <h2>BÖLÜM GEÇİLDİ!</h2>
-             </div>
+             <div id="win-screen" class="overlay hidden">
+                <h2>KAZANDIN!</h2>
+                <button id="play-again-button">TEKRAR OYNA</button>
+            </div>
         </div>
     </div>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const canvas = document.getElementById('gameCanvas');
-            const ctx = canvas.getContext('2d');
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
             const scoreDisplay = document.getElementById('score-display');
             const livesDisplay = document.getElementById('lives-display');
             const startScreen = document.getElementById('start-screen');
             const gameOverScreen = document.getElementById('game-over-screen');
-            const levelCompleteScreen = document.getElementById('level-complete-screen');
+            const winScreen = document.getElementById('win-screen');
             const startButton = document.getElementById('start-button');
             const restartButton = document.getElementById('restart-button');
-
-            canvas.width = 480;
-            canvas.height = 320;
-
-            let score, lives, gameState, rightPressed, leftPressed;
-            let animationFrameId;
-
-            // Oyun Nesneleri
-            const ball = {
-                x: canvas.width / 2,
-                y: canvas.height - 30,
-                dx: 2,
-                dy: -2,
-                radius: 10,
-                draw() {
-                    ctx.beginPath();
-                    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = "#fcf6b1";
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            };
-
-            const paddle = {
-                height: 10,
-                width: 75,
-                x: (canvas.width - 75) / 2,
-                speed: 7,
-                draw() {
-                    ctx.beginPath();
-                    ctx.rect(this.x, canvas.height - this.height, this.width, this.height);
-                    ctx.fillStyle = "#f5f5f5";
-                    ctx.fill();
-                    ctx.closePath();
-                }
-            };
+            const playAgainButton = document.getElementById('play-again-button');
             
-            // Tuğla Ayarları
-            const brick = {
-                rowCount: 3,
-                columnCount: 5,
-                width: 75,
-                height: 20,
-                padding: 10,
-                offsetTop: 30,
-                offsetLeft: 30,
-                colors: ['#fa4659', '#2eb872', '#f9a828', '#3498db', '#9b59b6']
-            };
+            let ball, paddle, bricks, score, lives, gameState, animationFrameId;
+            let rightPressed = false, leftPressed = false;
 
-            let bricks = [];
-
-            function createBricks() {
-                bricks = [];
-                 for(let c = 0; c < brick.columnCount; c++) {
-                    bricks[c] = [];
-                    for(let r = 0; r < brick.rowCount; r++) {
-                        bricks[c][r] = { x: 0, y: 0, status: 1 };
-                    }
-                }
-            }
+            const BRICK_ROW_COUNT = 5, BRICK_COLUMN_COUNT = 8;
+            const BRICK_WIDTH = 50, BRICK_HEIGHT = 20;
+            const BRICK_PADDING = 5, BRICK_OFFSET_TOP = 30, BRICK_OFFSET_LEFT = 30;
 
             function init(isNewGame = true) {
-                if (isNewGame) {
+                gameState = 'initializing';
+                if(isNewGame) {
                     score = 0;
                     lives = 3;
                 }
-                gameState = 'initializing';
-                ball.x = canvas.width / 2;
-                ball.y = canvas.height - 30;
-                ball.dx = 2;
-                ball.dy = -2;
-                paddle.x = (canvas.width - paddle.width) / 2;
-                createBricks();
+                
+                ball = { x: canvas.width/2, y: canvas.height-30, dx: 2, dy: -2, radius: 10 };
+                paddle = { height: 10, width: 75, x: (canvas.width-75)/2 };
+                
+                bricks = [];
+                for(let c=0; c<BRICK_COLUMN_COUNT; c++) {
+                    bricks[c] = [];
+                    for(let r=0; r<BRICK_ROW_COUNT; r++) {
+                        bricks[c][r] = { x: 0, y: 0, status: 1 };
+                    }
+                }
                 updateHUD();
                 gameState = 'playing';
             }
-
-            function updateHUD() {
-                scoreDisplay.textContent = `SKOR: ${score}`;
-                livesDisplay.textContent = `CAN: ${lives}`;
-            }
-
-            // Çizim Fonksiyonları
+            
             function drawBall() {
-                ball.draw();
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI*2);
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--ball-color').trim();
+                ctx.fill();
+                ctx.closePath();
             }
 
             function drawPaddle() {
-                paddle.draw();
+                ctx.beginPath();
+                ctx.rect(paddle.x, canvas.height-paddle.height, paddle.width, paddle.height);
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--paddle-color').trim();
+                ctx.fill();
+                ctx.closePath();
             }
-
+            
             function drawBricks() {
-                for(let c = 0; c < brick.columnCount; c++) {
-                    for(let r = 0; r < brick.rowCount; r++) {
-                        if(bricks[c][r].status === 1) {
-                            const brickX = (c * (brick.width + brick.padding)) + brick.offsetLeft;
-                            const brickY = (r * (brick.height + brick.padding)) + brick.offsetTop;
+                for(let c=0; c<BRICK_COLUMN_COUNT; c++) {
+                    for(let r=0; r<BRICK_ROW_COUNT; r++) {
+                        if(bricks[c][r].status == 1) {
+                            let brickX = (c*(BRICK_WIDTH+BRICK_PADDING))+BRICK_OFFSET_LEFT;
+                            let brickY = (r*(BRICK_HEIGHT+BRICK_PADDING))+BRICK_OFFSET_TOP;
                             bricks[c][r].x = brickX;
                             bricks[c][r].y = brickY;
                             ctx.beginPath();
-                            ctx.rect(brickX, brickY, brick.width, brick.height);
-                            ctx.fillStyle = brick.colors[c % brick.colors.length];
+                            ctx.rect(brickX, brickY, BRICK_WIDTH, BRICK_HEIGHT);
+                            ctx.fillStyle = `hsl(${r * 360 / BRICK_ROW_COUNT}, 90%, 60%)`;
                             ctx.fill();
                             ctx.closePath();
                         }
@@ -240,19 +183,18 @@
                 }
             }
 
-            // Çarpışma Tespiti
             function collisionDetection() {
-                for(let c=0; c<brick.columnCount; c++) {
-                    for(let r=0; r<brick.rowCount; r++) {
-                        const b = bricks[c][r];
-                        if(b.status === 1) {
-                            if(ball.x > b.x && ball.x < b.x+brick.width && ball.y > b.y && ball.y < b.y+brick.height) {
+                for(let c=0; c<BRICK_COLUMN_COUNT; c++) {
+                    for(let r=0; r<BRICK_ROW_COUNT; r++) {
+                        let b = bricks[c][r];
+                        if(b.status == 1) {
+                            if(ball.x > b.x && ball.x < b.x+BRICK_WIDTH && ball.y > b.y && ball.y < b.y+BRICK_HEIGHT) {
                                 ball.dy = -ball.dy;
                                 b.status = 0;
                                 score++;
                                 updateHUD();
-                                if(score === brick.rowCount * brick.columnCount) {
-                                    levelComplete();
+                                if(score == BRICK_ROW_COUNT*BRICK_COLUMN_COUNT) {
+                                    win();
                                 }
                             }
                         }
@@ -260,30 +202,34 @@
                 }
             }
             
+            function updateHUD() {
+                scoreDisplay.textContent = `SKOR: ${score}`;
+                livesDisplay.textContent = `CAN: ${lives}`;
+            }
+
             function update() {
-                // Duvar çarpışmaları (sol/sağ)
-                if(ball.x + ball.dx > canvas.width - ball.radius || ball.x + ball.dx < ball.radius) {
+                if(rightPressed && paddle.x < canvas.width-paddle.width) {
+                    paddle.x += 7;
+                }
+                else if(leftPressed && paddle.x > 0) {
+                    paddle.x -= 7;
+                }
+                
+                if(ball.x + ball.dx > canvas.width-ball.radius || ball.x + ball.dx < ball.radius) {
                     ball.dx = -ball.dx;
                 }
-                // Duvar çarpışmaları (üst)
                 if(ball.y + ball.dy < ball.radius) {
                     ball.dy = -ball.dy;
-                } else if(ball.y + ball.dy > canvas.height - ball.radius) {
-                    // Platform çarpışması
+                } 
+                else if(ball.y + ball.dy > canvas.height-ball.radius) {
                     if(ball.x > paddle.x && ball.x < paddle.x + paddle.width) {
                         ball.dy = -ball.dy;
-                    } else {
-                        loseLife();
+                    }
+                    else {
+                       loseLife();
                     }
                 }
-
-                // Platform Hareketi
-                if(rightPressed && paddle.x < canvas.width - paddle.width) {
-                    paddle.x += paddle.speed;
-                } else if(leftPressed && paddle.x > 0) {
-                    paddle.x -= paddle.speed;
-                }
-
+                
                 ball.x += ball.dx;
                 ball.y += ball.dy;
             }
@@ -305,7 +251,6 @@
                 animationFrameId = requestAnimationFrame(gameLoop);
             }
             
-            // Kontroller
             document.addEventListener("keydown", e => {
                 if(e.key == "Right" || e.key == "ArrowRight") rightPressed = true;
                 else if(e.key == "Left" || e.key == "ArrowLeft") leftPressed = true;
@@ -316,45 +261,27 @@
                 else if(e.key == "Left" || e.key == "ArrowLeft") leftPressed = false;
             }, false);
             
-            // DOKUNMATİK VE FARE KONTROLÜ İÇİN GELİŞTİRİLMİŞ İŞLEV
             function handlePointerMove(clientX) {
+                // HATA DÜZELTMESİ: Oyun başlamadan önce 'paddle' tanımsız olduğu için
+                // bu fonksiyonun çalışmasını engelle.
+                if (!paddle) return;
+                
                 const rect = canvas.getBoundingClientRect();
-                // Tuvalin gerçek boyutu ile ekranda görünen boyutu arasındaki oranı hesapla
                 const scaleX = canvas.width / rect.width; 
                 let relativeX = (clientX - rect.left) * scaleX;
-
                 paddle.x = relativeX - paddle.width / 2;
-
-                // Platformun tuval dışına çıkmasını engelle
-                if (paddle.x < 0) {
-                    paddle.x = 0;
-                }
-                if (paddle.x + paddle.width > canvas.width) {
-                    paddle.x = canvas.width - paddle.width;
-                }
+                if (paddle.x < 0) paddle.x = 0;
+                if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
             }
 
-            // Fare Kontrolü
-            document.addEventListener("mousemove", e => {
-                handlePointerMove(e.clientX);
-            }, false);
-            
-            // Dokunmatik Kontroller (touchstart ve touchmove)
-            document.addEventListener("touchstart", e => {
-                // Varsayılan dokunma eylemlerini (kaydırma, yakınlaştırma gibi) engelle
-                e.preventDefault(); 
-                handlePointerMove(e.touches[0].clientX);
-            }, { passive: false });
-
-            document.addEventListener("touchmove", e => {
-                e.preventDefault();
-                handlePointerMove(e.touches[0].clientX);
-            }, { passive: false });
+            document.addEventListener("mousemove", e => handlePointerMove(e.clientX), false);
+            document.addEventListener("touchstart", e => { e.preventDefault(); handlePointerMove(e.touches[0].clientX); }, { passive: false });
+            document.addEventListener("touchmove", e => { e.preventDefault(); handlePointerMove(e.touches[0].clientX); }, { passive: false });
 
             function loseLife() {
                 lives--;
                 updateHUD();
-                if(lives <= 0) {
+                if(!lives) {
                     gameOver();
                 } else {
                     ball.x = canvas.width/2;
@@ -368,36 +295,37 @@
             function gameOver() {
                 gameState = 'gameOver';
                 gameOverScreen.classList.remove('hidden');
-                cancelAnimationFrame(animationFrameId);
             }
 
-            function levelComplete() {
-                 gameState = 'paused';
-                 levelCompleteScreen.classList.remove('hidden');
-                 cancelAnimationFrame(animationFrameId);
-                 setTimeout(() => { 
-                    levelCompleteScreen.classList.add('hidden');
-                    // Geliştirme notu: Sonraki level'lar için buraya kod eklenebilir.
-                    // Şimdilik oyunu yeniden başlatıyoruz.
-                    init(false); 
-                    gameLoop();
-                }, 3000);
+            function win() {
+                gameState = 'win';
+                winScreen.classList.remove('hidden');
             }
-
 
             function startGame() {
                 startScreen.classList.add('hidden');
                 gameOverScreen.classList.add('hidden');
+                winScreen.classList.add('hidden');
                 init(true);
                 if(animationFrameId) cancelAnimationFrame(animationFrameId);
                 gameLoop();
             }
+
+            // MOBİLDE BAŞLATMA SORUNUNU GİDERMEK İÇİN GÜNCELLENMİŞ BUTON AYARI
+            function setupStartButton(button) {
+                const handleStart = (e) => {
+                    e.preventDefault();
+                    startGame();
+                };
+                button.addEventListener('touchstart', handleStart, { passive: false });
+                button.addEventListener('click', handleStart);
+            }
             
-            startButton.addEventListener('click', startGame);
-            restartButton.addEventListener('click', startGame);
+            setupStartButton(startButton);
+            setupStartButton(restartButton);
+            setupStartButton(playAgainButton);
         });
     </script>
 </body>
 </html>
-
 
