@@ -1,224 +1,204 @@
-// HTML elemanlarını seçme
-const gameArea = document.getElementById("game");
-const character = document.getElementById("character");
-const scoreDisplay = document.getElementById("score");
-const pauseButton = document.getElementById("pauseButton");
-const gameOverModal = document.getElementById("gameOverModal");
-const pauseModal = document.getElementById("pauseModal");
-const finalScore = document.getElementById("finalScore");
-const restartButton = document.getElementById("restartButton");
-const resumeButton = document.getElementById("resumeButton");
-const homeButton = document.getElementById("homeButton");
+document.addEventListener('DOMContentLoaded', () => {
 
-// Oyun değişkenleri
-let paused = true;
-let gameHasStarted = false;
-let score = 0;
-let gameSpeed = 2.5;
-let lastObstacleTime = 0;
-let minObstacleGap = 2000;
-let animationFrameId;
+    // HTML Elementlerini Seçme
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const highScoreDisplay = document.getElementById('highScoreDisplay');
+    const startScreen = document.getElementById('startScreen');
+    const gameOverScreen = document.getElementById('gameOverScreen');
+    const startButton = document.getElementById('startButton');
+    const restartButton = document.getElementById('restartButton');
+    const finalScoreElem = document.getElementById('finalScore');
+    const finalHighScoreElem = document.getElementById('finalHighScore');
 
-let characterBottom;
-let velocityY = 0;
+    // Canvas Boyutlandırma
+    const canvasWidth = 500;
+    const canvasHeight = 888;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
-// Zorluk ayarları
-const difficulty = {
-    normal: { gravity: 0.18, jump: -6.5 }
-};
-let gravity = difficulty.normal.gravity;
-let jumpStrength = difficulty.normal.jump;
+    // Oyun Sabitleri (Ayarları buradan kolayca değiştir)
+    const PLAYER_WIDTH = 40;
+    const PLAYER_HEIGHT = 40;
+    const GRAVITY = 0.4;
+    const LIFT = -8; // Zıplama gücü
+    const PIPE_WIDTH = 80;
+    const PIPE_GAP = 220; // Borular arası boşluk
+    const PIPE_SPAWN_INTERVAL = 120; // Kaç karede bir yeni boru geleceği
+    const PIPE_SPEED = 3;
 
-// --- Temel Oyun Fonksiyonları ---
+    // Oyun Değişkenleri
+    let player, pipes, score, highScore, frameCount, isGameOver;
 
-function init() {
-    // Oyunun tüm ayarlarını başlangıç durumuna getir
-    paused = true;
-    gameHasStarted = false;
-    score = 0;
-    gameSpeed = 2.5;
-    minObstacleGap = 2000;
-    scoreDisplay.textContent = `Skor: 0`;
-    
-    // Engelleri temizle
-    document.querySelectorAll(".obstacle").forEach(obs => obs.remove());
-    
-    // Karakteri başlangıç pozisyonuna yerleştir
-    characterBottom = gameArea.clientHeight / 2;
-    character.style.bottom = `${characterBottom}px`;
-    velocityY = 0;
-    
-    // Modalları gizle ve başlangıç mesajını göster
-    hideModals();
-    showStartMessage();
-    
-    // Eğer bir animasyon döngüsü varsa durdur
-    if (animationFrameId) {
-        cancelAnimationFrame(animationFrameId);
-    }
-}
+    // En yüksek skoru tarayıcı hafızasından çekme
+    highScore = localStorage.getItem('flappyBlockHighScore') || 0;
+    highScoreDisplay.textContent = `REKOR: ${highScore}`;
 
-function startGame() {
-    if (gameHasStarted) return;
-    
-    gameHasStarted = true;
-    paused = false;
-    hideModals();
-    
-    lastObstacleTime = Date.now();
-    gameLoop();
-}
+    // Oyuncu nesnesi
+    player = {
+        x: canvasWidth / 4,
+        y: canvasHeight / 2,
+        width: PLAYER_WIDTH,
+        height: PLAYER_HEIGHT,
+        velocity: 0
+    };
 
-function togglePause() {
-    // Oyun başlamadıysa veya oyun bittiyse duraklatma işlemi yapma
-    if (!gameHasStarted || !gameOverModal.classList.contains('hidden')) return;
-    
-    paused = !paused;
-    const obstacles = document.querySelectorAll(".obstacle");
-    
-    if (paused) {
-        cancelAnimationFrame(animationFrameId);
-        obstacles.forEach(obs => { obs.style.animationPlayState = "paused"; });
-        
-        pauseModal.querySelector('h2').textContent = "Duraklatıldı";
-        resumeButton.classList.remove('hidden');
-        homeButton.classList.remove('hidden');
-        pauseModal.classList.remove('hidden');
-    
-    } else {
-        gameLoop();
-        obstacles.forEach(obs => { obs.style.animationPlayState = "running"; });
-    }
-}
+    // Oyunu başlatan ana fonksiyon
+    function startGame() {
+        // Değişkenleri sıfırla
+        player.y = canvasHeight / 2;
+        player.velocity = 0;
+        pipes = [];
+        score = 0;
+        frameCount = 0;
+        isGameOver = false;
 
-function jump() {
-    if (paused) {
-        startGame();
-        return;
-    }
-    velocityY = jumpStrength;
-}
+        // Arayüzü ayarla
+        gameOverScreen.style.display = 'none';
+        startScreen.style.display = 'none';
+        scoreDisplay.style.display = 'block';
+        highScoreDisplay.style.display = 'block';
+        scoreDisplay.textContent = `SKOR: 0`;
 
-function createObstacle() {
-    const openingHeight = 200;
-    const gameHeight = gameArea.clientHeight;
-    const openingTop = Math.floor(Math.random() * (gameHeight - openingHeight - 100)) + 50;
+        // Oyun döngüsünü başlat
+        gameLoop();
+    }
 
-    // Üst ve alt engelleri oluşturma
-    const topObstacle = document.createElement("div");
-    topObstacle.classList.add("obstacle", "obstacle-top");
-    topObstacle.style.height = `${openingTop}px`;
-    topObstacle.style.animationDuration = `${gameSpeed}s`;
-    
-    const bottomObstacle = document.createElement("div");
-    bottomObstacle.classList.add("obstacle", "obstacle-bottom");
-    bottomObstacle.style.height = `${gameHeight - openingTop - openingHeight}px`;
-    bottomObstacle.style.animationDuration = `${gameSpeed}s`;
-    
-    gameArea.appendChild(topObstacle);
-    gameArea.appendChild(bottomObstacle);
-}
+    // Oyun döngüsü
+    function gameLoop() {
+        if (isGameOver) return;
 
-function checkCollisions() {
-    const characterRect = character.getBoundingClientRect();
-    const gameRect = gameArea.getBoundingClientRect();
-    
-    // Duvarlara çarpma kontrolü
-    if (characterRect.top <= gameRect.top || characterRect.bottom >= gameRect.bottom) {
-        gameOver();
-        return;
-    }
-    
-    const obstacles = document.querySelectorAll(".obstacle");
-    obstacles.forEach(obs => {
-        const obsRect = obs.getBoundingClientRect();
-        
-        // Çarpışma kontrolü
-        if (
-            characterRect.right > obsRect.left &&
-            characterRect.left < obsRect.right &&
-            characterRect.bottom > obsRect.top &&
-            characterRect.top < obsRect.bottom
-        ) {
-            gameOver();
-            return;
-        }
-        
-        // Engelden geçiş kontrolü ve skor artırma
-        if (obs.passed === undefined && obsRect.right < characterRect.left) {
-            if(obs.classList.contains('obstacle-top')) {
-                score++;
-                scoreDisplay.textContent = `Skor: ${score}`;
-                if (score > 0 && score % 5 === 0 && gameSpeed > 1.2) {
-                    gameSpeed -= 0.1;
-                }
-            }
-            obs.passed = true;
-        }
-        
-        // Ekran dışına çıkan engeli temizleme
-        if (obsRect.right < gameRect.left) {
-            obs.remove();
-        }
-    });
-}
+        // Ekranı temizle
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-function gameOver() {
-    paused = true;
-    cancelAnimationFrame(animationFrameId);
-    finalScore.textContent = score;
-    gameOverModal.classList.remove('hidden');
-}
+        // Güncelleme ve Çizim Fonksiyonları
+        updatePlayer();
+        drawPlayer();
+        updatePipes();
+        drawPipes();
+        detectCollisions();
 
-function gameLoop() {
-    if (paused) return;
-    
-    velocityY += gravity;
-    characterBottom -= velocityY;
-    character.style.bottom = `${characterBottom}px`;
-    
-    const now = Date.now();
-    if (now - lastObstacleTime > minObstacleGap) {
-        createObstacle();
-        lastObstacleTime = now;
-        minObstacleGap = Math.max(1200, 2000 - score * 50); 
-    }
-    
-    checkCollisions();
-    animationFrameId = requestAnimationFrame(gameLoop);
-}
+        frameCount++;
+        requestAnimationFrame(gameLoop);
+    }
 
-function hideModals() {
-    gameOverModal.classList.add('hidden');
-    pauseModal.classList.add('hidden');
-}
+    // Oyuncuyu güncelle (yerçekimi, hareket)
+    function updatePlayer() {
+        player.velocity += GRAVITY;
+        player.y += player.velocity;
+    }
 
-function showStartMessage() {
-    pauseModal.classList.remove('hidden');
-    pauseModal.querySelector('h2').textContent = "Başlamak İçin Dokun";
-    resumeButton.classList.add('hidden');
-    homeButton.classList.add('hidden');
-}
+    // Oyuncuyu çiz
+    function drawPlayer() {
+        ctx.fillStyle = 'var(--player-color)';
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+    
+    // Engelleri güncelle (hareket, yeni engel ekleme)
+    function updatePipes() {
+        // Belirli aralıkla yeni boru ekle
+        if (frameCount % PIPE_SPAWN_INTERVAL === 0) {
+            const topPipeHeight = Math.random() * (canvasHeight - PIPE_GAP - 150) + 50;
+            pipes.push({
+                x: canvasWidth,
+                y: 0,
+                height: topPipeHeight,
+                passed: false
+            });
+            pipes.push({
+                x: canvasWidth,
+                y: topPipeHeight + PIPE_GAP,
+                height: canvasHeight - topPipeHeight - PIPE_GAP,
+                passed: true // Alt boruyu skor için sayma
+            });
+        }
+        
+        // Boruları sola hareket ettir
+        pipes.forEach(pipe => {
+            pipe.x -= PIPE_SPEED;
+        });
 
-// --- Olay Dinleyicileri ---
+        // Ekran dışına çıkan boruları sil
+        pipes = pipes.filter(pipe => pipe.x + PIPE_WIDTH > 0);
+    }
 
-// Oyun alanına tıklama ve tuş basma olayları
-gameArea.addEventListener("click", () => {
-    jump();
+    // Engelleri çiz
+    function drawPipes() {
+        ctx.fillStyle = 'var(--pipe-color)';
+        ctx.strokeStyle = 'var(--pipe-border-color)';
+        ctx.lineWidth = 4;
+        pipes.forEach(pipe => {
+            ctx.fillRect(pipe.x, pipe.y, PIPE_WIDTH, pipe.height);
+            ctx.strokeRect(pipe.x, pipe.y, PIPE_WIDTH, pipe.height);
+        });
+    }
+
+    // Çarpışma kontrolü ve skorlama
+    function detectCollisions() {
+        // Ekranın üst ve alt sınırlarına çarpma
+        if (player.y + player.height > canvasHeight || player.y < 0) {
+            endGame();
+        }
+
+        // Borulara çarpma
+        for (let pipe of pipes) {
+            if (
+                player.x < pipe.x + PIPE_WIDTH &&
+                player.x + player.width > pipe.x &&
+                player.y < pipe.y + pipe.height &&
+                player.y + player.height > pipe.y
+            ) {
+                endGame();
+                return;
+            }
+
+            // Skor artırma
+            if (!pipe.passed && pipe.x + PIPE_WIDTH < player.x) {
+                score++;
+                scoreDisplay.textContent = `SKOR: ${score}`;
+                pipe.passed = true;
+            }
+        }
+    }
+
+    // Oyunu bitiren fonksiyon
+    function endGame() {
+        isGameOver = true;
+        
+        // Rekor kontrolü ve kaydetme
+        if (score > highScore) {
+            highScore = score;
+            localStorage.setItem('flappyBlockHighScore', highScore);
+        }
+
+        // Oyun bitti ekranını göster
+        finalScoreElem.textContent = score;
+        finalHighScoreElem.textContent = highScore;
+        highScoreDisplay.textContent = `REKOR: ${highScore}`;
+        gameOverScreen.style.display = 'flex';
+        scoreDisplay.style.display = 'none';
+    }
+
+    // Oyuncu zıplama fonksiyonu
+    function jump() {
+        if (!isGameOver) {
+            player.velocity = LIFT;
+        }
+    }
+
+    // Olay Dinleyicileri (Event Listeners)
+    startButton.addEventListener('click', startGame);
+    restartButton.addEventListener('click', startGame);
+
+    // PC ve Mobil için kontroller
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') jump();
+    });
+    
+    canvas.addEventListener('mousedown', jump);
+    canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault(); // Ekranda kaydırmayı engelle
+        jump();
+    });
 });
-
-document.addEventListener("keydown", (e) => {
-    if (e.code === "Space") {
-        e.preventDefault();
-        jump();
-    }
-});
-
-// Buton olayları
-pauseButton.addEventListener('click', togglePause);
-restartButton.addEventListener('click', init);
-resumeButton.addEventListener('click', togglePause);
-homeButton.addEventListener('click', init);
-
-// Sayfa yüklendiğinde oyunu başlatma
-window.onload = init;
