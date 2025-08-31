@@ -6,58 +6,82 @@
     <style>
         body {
             margin: 0;
-            background: #f0f0f0;
-            font-family: 'Arial', sans-serif;
+            background: #e0e0e0; /* Açık gri tonları */
+            font-family: 'Press Start 2P', cursive; /* Piksel art temalı font */
             text-align: center;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
+            overflow: hidden; /* Sayfa taşmasını engelle */
+            background-image: url('https://via.placeholder.com/1920x1080/c0c0c0/ffffff?text=Oyun_Arka_Plani'); /* Genel arka plan */
+            background-size: cover;
+            background-position: center;
         }
+
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap'); /* Google Font */
 
         #menu {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px 40px;
+            background: rgba(255, 255, 255, 0.9); /* Yarı şeffaf beyaz */
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Daha belirgin gölge */
+            border: 2px solid #555;
         }
 
         h1 {
-            color: #333;
+            color: #4CAF50; /* Ana tema rengi */
+            margin-bottom: 25px;
+            font-size: 2.5em; /* Daha büyük başlık */
+            text-shadow: 2px 2px #333;
         }
 
         button {
-            padding: 12px 20px;
-            font-size: 18px;
+            padding: 15px 25px;
+            font-size: 20px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             background: #4CAF50;
             color: white;
             cursor: pointer;
-            margin: 10px;
-            transition: background 0.3s, transform 0.2s;
+            margin: 12px;
+            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-family: 'Press Start 2P', cursive;
         }
 
         button:hover {
             background: #45a049;
-            transform: translateY(-2px);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
 
         button:active {
-            transform: translateY(0);
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         canvas {
-            background: #fff;
+            background: #333; /* Canvas arka planı, üzerine resim gelecek */
             display: none;
             margin-top: 20px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 5px solid #555; /* Kalın ve belirgin çerçeve */
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+            background-image: url('https://via.placeholder.com/800x600/333333/ffffff?text=Canvas_Arka_Plani'); /* Canvas arka planı görseli */
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Oyun içi yazı stilleri */
+        .game-text {
+            font-family: 'Press Start 2P', cursive;
+            color: #fff; /* Beyaz veya açık bir renk */
+            text-shadow: 1px 1px 2px #000;
         }
     </style>
 </head>
@@ -75,10 +99,38 @@
         const ctx = canvas.getContext("2d");
         const menu = document.getElementById("menu");
 
+        // Görselleri yükle
+        const wallImage = new Image();
+        wallImage.src = 'https://via.placeholder.com/50x50/8b4513/ffffff?text=Duvar'; // Duvar dokusu
+        const playerImage = new Image();
+        playerImage.src = 'https://via.placeholder.com/50x50/ff0000/ffffff?text=Oyuncu'; // Oyuncu karakteri
+        const exitImage = new Image();
+        exitImage.src = 'https://via.placeholder.com/50x50/ffd700/ffffff?text=Cikis'; // Çıkış (bitiş) noktası
+        const canvasBgImage = new Image();
+        canvasBgImage.src = 'https://via.placeholder.com/800x600/333333/ffffff?text=Canvas_Arka_Plani'; // Canvas arka planı
+
+        // Tüm görsellerin yüklenmesini bekle
+        let imagesLoaded = 0;
+        const totalImages = 4;
+
+        function imageLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                // Tüm görseller yüklendiğinde oyun başlayabilir
+                console.log("Tüm görseller yüklendi!");
+                // draw() veya diğer başlangıç işlemleri burada yapılabilir
+            }
+        }
+
+        wallImage.onload = imageLoaded;
+        playerImage.onload = imageLoaded;
+        exitImage.onload = imageLoaded;
+        canvasBgImage.onload = imageLoaded;
+
         function resizeCanvas() {
             canvas.width = Math.min(window.innerWidth * 0.9, 800);
             canvas.height = Math.min(window.innerHeight * 0.7, 600);
-            if (canvas.style.display === "block") {
+            if (canvas.style.display === "block" && imagesLoaded === totalImages) {
                 draw();
             }
         }
@@ -86,6 +138,7 @@
         window.onresize = resizeCanvas;
 
         const levels = [
+            // Seviyeleriniz burada... (Önceki koddan kopyalayabilirsiniz)
             [
                 "1111111111",
                 "1S000000E1",
@@ -101,9 +154,8 @@
             [
                 "1111111111111",
                 "1S000011110E1",
-                "1110100101101",
-                "1000100001101",
-                "1111111100001",
+                "1110100101111",
+                "1000100000001",
                 "1111111111111"
             ],
             [
@@ -122,15 +174,40 @@
             ],
             [
                 "1111111111111111",
-                "1S000001110000E1",
+                "1S000000000000E1",
                 "1011111111111101",
-                "1000001111000001",
-                "1111101100011111",
-                "1111000001111111",
+                "1000000000000001",
                 "1111111111111111"
             ],
-
-
+             [
+                "11111111111111",
+                "1S000000000011",
+                "10111111111011",
+                "1000000001000E",
+                "11111111111111"
+            ],
+             [
+                "11111111111111",
+                "1S000000100001",
+                "11111100101111",
+                "1000000100000E",
+                "11111111111111"
+            ],
+             [
+                "1111111111111",
+                "1S00000000001",
+                "111111111101",
+                "100000000001",
+                "11111111110E",
+                "1111111111111"
+            ],
+             [
+                "11111111111111",
+                "1S00000000000E",
+                "11111111111111",
+                "10000000000001",
+                "11111111111111"
+            ]
         ];
 
         let maze = [];
@@ -142,7 +219,7 @@
 
         function loadLevel(levelIndex) {
             if (levelIndex >= levels.length) {
-                alert("🎉 Tebrikler! Tüm seviyeler bitti!");
+                alert("🎉 Tebrikler! Tüm seviyeler bitti! Toplam Skor: " + score);
                 endGame();
                 return;
             }
@@ -155,16 +232,20 @@
                     }
                 }
             }
+            draw(); // Yeni seviye yüklendiğinde çizimi güncelle
         }
 
         function startGame() {
+            if (imagesLoaded < totalImages) {
+                alert("Görseller yükleniyor, lütfen bekleyiniz...");
+                return;
+            }
             menu.style.display = "none";
             canvas.style.display = "block";
             score = 0;
             currentLevel = 0;
             isGameRunning = true;
             loadLevel(currentLevel);
-            draw(); // Oyunu başlattıktan sonra ilk kareyi çiz
         }
 
         function endGame() {
@@ -183,8 +264,6 @@
             alert("🏆 En Yüksek Skor: " + highScore);
         }
 
-        // --- Yeni Kontrol Mekanizması ---
-        // Sadece bir tuşa basıldığında hareket etmeyi sağlar
         window.addEventListener("keydown", e => {
             if (!isGameRunning) return;
 
@@ -201,6 +280,11 @@
                 newCol++;
             }
 
+            // Sınır kontrolü
+            if (newRow < 0 || newRow >= maze.length || newCol < 0 || newCol >= maze[0].length) {
+                return; // Harita dışına çıkmayı engelle
+            }
+
             const nextCell = maze[newRow] && maze[newRow][newCol];
 
             if (nextCell === "0" || nextCell === "E") {
@@ -211,49 +295,91 @@
                     score += 10;
                     currentLevel++;
                     alert(`🎉 Tebrikler! Seviye ${currentLevel} tamamlandı! Skor: ${score}`);
-                    loadLevel(currentLevel);
+                    loadLevel(currentLevel); // Yeni seviyeyi yükle
+                    return; // Yeni seviye yüklenince çizim tekrar yapılacağı için burada erken çık
                 }
-                draw(); // Her hareketten sonra ekranı yeniden çiz
+                draw();
             }
         });
-        // --- Yeni Kontrol Mekanizması Son ---
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (maze.length === 0) return;
+        // Fare ile kontrol (Ekstra özellik)
+        /*
+        canvas.addEventListener("click", (e) => {
+            if (!isGameRunning || imagesLoaded < totalImages) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
 
             const cellW = canvas.width / maze[0].length;
             const cellH = canvas.height / maze.length;
+
+            const clickedCol = Math.floor(mouseX / cellW);
+            const clickedRow = Math.floor(mouseY / cellH);
+
+            // Sadece bir adım atılabilen yere tıklanırsa hareket et
+            const dx = Math.abs(player.col - clickedCol);
+            const dy = Math.abs(player.row - clickedRow);
+
+            if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) { // Tek adım sağa/sola/yukarı/aşağı
+                let newRow = clickedRow;
+                let newCol = clickedCol;
+
+                const nextCell = maze[newRow] && maze[newRow][newCol];
+
+                if (nextCell === "0" || nextCell === "E") {
+                    player.row = newRow;
+                    player.col = newCol;
+
+                    if (nextCell === "E") {
+                        score += 10;
+                        currentLevel++;
+                        alert(`🎉 Tebrikler! Seviye ${currentLevel} tamamlandı! Skor: ${score}`);
+                        loadLevel(currentLevel);
+                        return;
+                    }
+                    draw();
+                }
+            }
+        });
+        */
+
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (maze.length === 0 || imagesLoaded < totalImages) return;
+
+            const cellW = canvas.width / maze[0].length;
+            const cellH = canvas.height / maze.length;
+
+            // Canvas arka planını çiz
+            ctx.drawImage(canvasBgImage, 0, 0, canvas.width, canvas.height);
 
             for (let r = 0; r < maze.length; r++) {
                 for (let c = 0; c < maze[r].length; c++) {
                     const cell = maze[r][c];
                     if (cell === "1") {
-                        ctx.fillStyle = "#333";
-                        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                        // Duvarları dokulu görselle çiz
+                        ctx.drawImage(wallImage, c * cellW, r * cellH, cellW, cellH);
                     } else if (cell === "E") {
-                        ctx.fillStyle = "#00c400";
-                        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                        // Bitiş noktasını görselle çiz
+                        ctx.drawImage(exitImage, c * cellW, r * cellH, cellW, cellH);
                     }
+                    // Yollar (0) için boş bırak, arka plan görseli görünür
                 }
             }
 
-            ctx.fillStyle = "#ff0000";
-            ctx.beginPath();
-            ctx.arc(
-                player.col * cellW + cellW / 2,
-                player.row * cellH + cellH / 2,
-                Math.min(cellW, cellH) / 3,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
+            // Oyuncuyu görselle çiz
+            ctx.drawImage(playerImage, player.col * cellW, player.row * cellH, cellW, cellH);
 
-            ctx.fillStyle = "#333";
-            ctx.font = "16px Arial";
-            ctx.fillText("Skor: " + score, 10, 20);
-            ctx.fillText("En Yüksek: " + highScore, 10, 40);
-            ctx.fillText("Level: " + (currentLevel + 1), 10, 60);
+            // Skor ve level bilgilerini çiz
+            ctx.fillStyle = "#fff"; // Beyaz yazı rengi
+            ctx.font = "20px 'Press Start 2P', cursive"; // Özel font ve boyut
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.fillText("SKOR: " + score, 10, 10);
+            ctx.fillText("EN YÜKSEK: " + highScore, 10, 40);
+            ctx.fillText("LEVEL: " + (currentLevel + 1), 10, 70);
         }
     </script>
 </body>
