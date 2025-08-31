@@ -1,47 +1,41 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Flappy Block Oyunu</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flappy Block</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-800 flex flex-col items-center justify-center min-h-screen p-4 text-white">
+<body>
 
-  <h1 class="text-3xl sm:text-4xl mb-4">Flappy Block</h1>
+    <div class="game-wrapper">
+        <h1 class="game-title">FLAPPY BLOCK</h1>
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="scoreDisplay" class="hud">SKOR: 0</div>
+        <div id="highScoreDisplay" class="hud">REKOR: 0</div>
 
-  <div id="game-container">
-      <div id="game" class="w-full h-full relative">
-          <div id="character"></div>
-      </div>
-      
-            <div id="score" class="absolute top-4 left-4 text-2xl text-white font-bold" style="text-shadow: 2px 2px 4px #000;">Skor: 0</div>
-      
-            <button id="pauseButton" class="absolute top-4 right-4 bg-yellow-500 text-black p-2 rounded-lg border-2 border-black shadow-md">
-          ⏸
-      </button>
+        <div id="startScreen" class="overlay">
+            <div class="overlay-content">
+                <h2>FLAPPY BLOCK</h2>
+                <p>Zıplamak için tıkla veya Boşluk tuşuna bas.</p>
+                <button id="startButton">BAŞLA</button>
+            </div>
+        </div>
 
-            <div id="gameOverModal" class="modal-overlay hidden">
-          <div class="bg-slate-700 p-8 rounded-xl text-center border-4 border-slate-500 shadow-lg">
-              <h2 class="text-3xl mb-2 text-red-500">Oyun Bitti!</h2>
-              <p class="text-xl mb-4">Skorun: <span id="finalScore" class="font-bold text-yellow-400">0</span></p>
-              <button id="restartButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg border-2 border-black">Yeniden Başla</button>
-          </div>
-      </div>
+        <div id="gameOverScreen" class="overlay" style="display: none;">
+            <div class="overlay-content">
+                <h2>OYUN BİTTİ</h2>
+                <p>Skorun: <span id="finalScore">0</span></p>
+                <p>En Yüksek Skor: <span id="finalHighScore">0</span></p>
+                <button id="restartButton">YENİDEN BAŞLA</button>
+            </div>
+        </div>
+    </div>
 
-            <div id="pauseModal" class="modal-overlay hidden">
-          <div class="bg-slate-700 p-8 rounded-xl text-center border-4 border-slate-500 shadow-lg">
-              <h2 class="text-3xl mb-6 text-yellow-400">Başlamak İçin Dokun</h2>
-              <div class="flex flex-col space-y-4">
-                  <button id="resumeButton" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg text-lg border-2 border-black hidden">Devam Et</button>
-                  <button id="homeButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-lg border-2 border-black hidden">Ana Menü</button>
-              </div>
-          </div>
-      </div>
-  </div>
-
-  <script src="script.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
