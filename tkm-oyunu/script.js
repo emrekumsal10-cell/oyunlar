@@ -9,13 +9,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const levelCompleteScreen = document.getElementById('level-complete-screen');
     const startButton = document.getElementById('start-button');
     const restartButton = document.getElementById('restart-button');
+    
+    // Mobil Kontrol Butonları
+    const btnUp = document.getElementById('btn-up');
+    const btnDown = document.getElementById('btn-down');
+    const btnLeft = document.getElementById('btn-left');
+    const btnRight = document.getElementById('btn-right');
 
     const TILE_SIZE = 20;
-    let PACMAN_SPEED = 2;
-    let GHOST_SPEED = 1.8;
-
+    // Harita Sembolleri: 1=Duvar, 0=Yem, 2=Boşluk, 3=Güç Yemi, 4=Hayalet Yuvası
     const levels = [
-        [ // Level 1 Haritası
+        [
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
@@ -23,13 +27,12 @@ document.addEventListener('DOMContentLoaded', () => {
             [1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
-            [1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1],
             [1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,0,1,1,1,1,1,2,1,1,2,1,1,1,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
-            [1,1,1,1,1,1,0,1,1,2,1,1,1,4,4,1,1,1,2,1,1,0,1,1,1,1,1,1],
+            [1,1,1,1,1,1,0,1,1,2,1,1,4,4,4,4,1,1,2,1,1,0,1,1,1,1,1,1],
+            [1,2,2,2,2,2,0,2,2,2,1,4,4,4,4,4,4,1,2,2,2,0,2,2,2,2,2,1],
             [1,1,1,1,1,1,0,1,1,2,1,4,4,4,4,4,4,1,2,1,1,0,1,1,1,1,1,1],
-            [2,2,2,2,2,2,0,2,2,2,1,4,4,4,4,4,4,1,2,2,2,0,2,2,2,2,2,2], // Tünel
             [1,1,1,1,1,1,0,1,1,2,1,1,1,1,1,1,1,1,2,1,1,0,1,1,1,1,1,1],
             [1,1,1,1,1,1,0,1,1,2,2,2,2,2,2,2,2,2,2,1,1,0,1,1,1,1,1,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1],
@@ -40,292 +43,190 @@ document.addEventListener('DOMContentLoaded', () => {
             [1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1],
             [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
             [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-        ],
-        // Buraya 2. level haritası eklenebilir. Şimdilik tek level var.
+        ]
     ];
-
     canvas.width = levels[0][0].length * TILE_SIZE;
     canvas.height = levels[0].length * TILE_SIZE;
 
     let map, player, ghosts, score, lives, currentLevel, dotCount, frightenedTimer, ghostScoreMultiplier;
-    let animationFrameId;
+    let animationFrameId, pacmanSpeed, ghostSpeed;
 
     class Entity {
         constructor(x, y, speed) {
             this.x = x; this.y = y; this.speed = speed;
             this.size = TILE_SIZE;
-            this.dir = { x: 0, y: 0 };
-            this.nextDir = { x: 0, y: 0 };
+            this.dir = { x: 0, y: 0 }; this.nextDir = { x: 0, y: 0 };
         }
-        
-        getTilePos() { return { col: Math.floor(this.x / TILE_SIZE), row: Math.floor(this.y / TILE_SIZE) }; }
-        getFutureTilePos(dir) { return { col: Math.floor((this.x + dir.x * this.speed) / TILE_SIZE), row: Math.floor((this.y + dir.y * this.speed) / TILE_SIZE) }; }
-        
         isWall(col, row) {
             if (row < 0 || row >= map.length || col < 0 || col >= map[0].length) return true;
             return map[row][col] === 1;
         }
-
         handleTunnel() {
-            if (this.x < -this.size) this.x = canvas.width;
-            else if (this.x > canvas.width) this.x = -this.size;
+            if (this.x < -this.size / 2) this.x = canvas.width - this.size / 2;
+            else if (this.x > canvas.width - this.size / 2) this.x = -this.size / 2;
         }
     }
 
     class Player extends Entity {
         constructor(x, y) {
-            super(x, y, PACMAN_SPEED);
-            this.mouthOpen = 0;
-            this.startPos = { x, y };
+            super(x, y, 0); this.mouthOpen = 0; this.startPos = { x, y };
         }
-
         draw(ctx) {
             this.mouthOpen = (this.mouthOpen + 0.2) % (Math.PI * 2);
             let angle = this.dir.x === 0 && this.dir.y === 0 ? 0 : Math.atan2(this.dir.y, this.dir.x);
             let mouthAngle = Math.abs(Math.sin(this.mouthOpen)) * (Math.PI / 4);
-            
             ctx.save();
             ctx.translate(this.x + this.size/2, this.y + this.size/2);
             ctx.rotate(angle);
             ctx.fillStyle = '#FFFF00';
             ctx.beginPath();
             ctx.arc(0, 0, this.size / 2.2, mouthAngle, Math.PI * 2 - mouthAngle);
-            ctx.lineTo(0,0);
+            ctx.lineTo(0, 0);
             ctx.fill();
             ctx.restore();
         }
-
         update() {
-            // Yön değiştirme
             const onGrid = (this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0);
             if (onGrid) {
-                const nextTile = this.getFutureTilePos(this.nextDir);
-                if (!this.isWall(nextTile.col, nextTile.row)) {
-                    this.dir = { ...this.nextDir };
-                }
-                const currentTile = this.getFutureTilePos(this.dir);
-                if (this.isWall(currentTile.col, currentTile.row)) {
-                    this.dir = { x: 0, y: 0 };
-                }
+                const nextCol = Math.floor(this.x / TILE_SIZE) + this.nextDir.x;
+                const nextRow = Math.floor(this.y / TILE_SIZE) + this.nextDir.y;
+                if (!this.isWall(nextCol, nextRow)) this.dir = { ...this.nextDir };
+                const currentCol = Math.floor(this.x / TILE_SIZE) + this.dir.x;
+                const currentRow = Math.floor(this.y / TILE_SIZE) + this.dir.y;
+                if (this.isWall(currentCol, currentRow)) this.dir = { x: 0, y: 0 };
             }
-
-            this.x += this.dir.x * this.speed;
-            this.y += this.dir.y * this.speed;
-
+            this.x += this.dir.x * this.speed; this.y += this.dir.y * this.speed;
             this.handleTunnel();
-
-            // Yem yeme
-            const { col, row } = this.getTilePos();
+            const col = Math.round(this.x / TILE_SIZE), row = Math.round(this.y / TILE_SIZE);
             if (map[row][col] === 0) {
-                map[row][col] = 2; // Boşluk yap
-                score += 10;
-                dotCount--;
+                map[row][col] = 2; score += 10; dotCount--;
             } else if (map[row][col] === 3) {
-                map[row][col] = 2;
-                score += 50;
-                dotCount--;
-                frightenGhosts();
+                map[row][col] = 2; score += 50; dotCount--; frightenGhosts();
             }
         }
-        
         reset() {
-            this.x = this.startPos.x;
-            this.y = this.startPos.y;
-            this.dir = { x: 0, y: 0 };
-            this.nextDir = { x: 0, y: 0 };
+            this.x = this.startPos.x; this.y = this.startPos.y;
+            this.dir = { x: 0, y: 0 }; this.nextDir = { x: 0, y: 0 };
         }
     }
 
     class Ghost extends Entity {
-        constructor(x, y, color, name) {
-            super(x, y, GHOST_SPEED);
-            this.color = color; this.name = name;
-            this.mode = 'scatter'; // chase, frightened, eaten
-            this.startPos = { x, y };
-            this.scatterTarget = this.getScatterTarget();
+        constructor(x, y, color) {
+            super(x, y, 0); this.color = color;
+            this.mode = 'scatter'; this.startPos = { x, y };
         }
-
         draw(ctx) {
-            let bodyColor = this.color;
-            if (this.mode === 'frightened') bodyColor = '#0000FF';
-            if (this.mode === 'eaten') {
-                 // Sadece gözleri çiz
+            let bodyColor = this.mode === 'frightened' ? '#0000FF' : this.color;
+            if (this.mode === 'eaten') { // Sadece gözleri çiz
+                ctx.fillStyle = 'white';
+                ctx.beginPath(); ctx.arc(this.x + this.size / 3, this.y + this.size / 2.5, this.size / 5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x + this.size * 2/3, this.y + this.size / 2.5, this.size / 5, 0, Math.PI * 2); ctx.fill();
             } else {
-                 // Normal hayalet çizimi
                 ctx.fillStyle = bodyColor;
-                ctx.beginPath();
-                ctx.arc(this.x + this.size / 2, this.y + this.size / 2, this.size / 2, Math.PI, 0);
-                ctx.lineTo(this.x + this.size, this.y + this.size);
-                ctx.lineTo(this.x, this.y + this.size);
-                ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x + this.size / 2, this.y + this.size / 2, this.size / 2, Math.PI, 0);
+                ctx.lineTo(this.x + this.size, this.y + this.size); ctx.lineTo(this.x, this.y + this.size); ctx.fill();
+                ctx.fillStyle = 'white';
+                ctx.beginPath(); ctx.arc(this.x + this.size / 3, this.y + this.size / 2.5, this.size / 5, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(this.x + this.size * 2/3, this.y + this.size / 2.5, this.size / 5, 0, Math.PI * 2); ctx.fill();
             }
-             // Gözler
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(this.x + this.size / 3, this.y + this.size / 2.5, this.size / 5, 0, Math.PI * 2);
-            ctx.arc(this.x + this.size * 2/3, this.y + this.size / 2.5, this.size / 5, 0, Math.PI * 2);
-            ctx.fill();
         }
-        
         update() {
-             if ((this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0)) {
+            if (this.mode === 'eaten') {
+                const dx = this.startPos.x - this.x, dy = this.startPos.y - this.y;
+                if (Math.abs(dx) < this.speed && Math.abs(dy) < this.speed) {
+                    this.x = this.startPos.x; this.y = this.startPos.y; this.mode = 'chase'; return;
+                }
+                const angle = Math.atan2(dy, dx);
+                this.dir = {x: Math.cos(angle), y: Math.sin(angle)};
+            } else if ((this.x % TILE_SIZE === 0) && (this.y % TILE_SIZE === 0)) {
                 this.dir = this.getBestMove();
             }
-            this.x += this.dir.x * this.speed;
-            this.y += this.dir.y * this.speed;
+            this.x += this.dir.x * this.speed; this.y += this.dir.y * this.speed;
             this.handleTunnel();
-
-            if (this.mode === 'eaten' && this.x === this.startPos.x && this.y === this.startPos.y) {
-                this.mode = 'chase';
-            }
         }
-        
         getBestMove() {
-            let possibleMoves = [
-                {x: 0, y: -1}, // up
-                {x: 1, y: 0},  // right
-                {x: 0, y: 1},  // down
-                {x: -1, y: 0}  // left
-            ];
-            // Geri dönmesini engelle
-            possibleMoves = possibleMoves.filter(move => !(move.x === -this.dir.x && move.y === -this.dir.y));
-
+            let possibleMoves = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+            possibleMoves = possibleMoves.filter(m => !(m.x === -this.dir.x && m.y === -this.dir.y));
             let validMoves = [];
-            for (const move of possibleMoves) {
-                const nextTile = this.getFutureTilePos(move);
-                if (!this.isWall(nextTile.col, nextTile.row)) {
-                    validMoves.push(move);
-                }
+            for (const m of possibleMoves) {
+                if (!this.isWall(Math.floor(this.x/TILE_SIZE) + m.x, Math.floor(this.y/TILE_SIZE) + m.y)) validMoves.push(m);
             }
-
-            if (validMoves.length === 0) return {x: -this.dir.x, y: -this.dir.y}; // Dead end
-
-            let target = this.getTargetTile();
-            let bestMove = validMoves[0];
-            let minDistance = Infinity;
-
-            for (const move of validMoves) {
-                const nextPos = {x: this.x + move.x * TILE_SIZE, y: this.y + move.y * TILE_SIZE };
-                const distance = Math.hypot(nextPos.x - target.x, nextPos.y - target.y);
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    bestMove = move;
-                }
+            if (validMoves.length === 0) return {x: -this.dir.x, y: -this.dir.y};
+            const target = this.mode === 'chase' ? player : (this.mode === 'frightened' ? {x:Math.random()*canvas.width, y:Math.random()*canvas.height} : this.startPos);
+            let bestMove = validMoves[0], minDistance = Infinity;
+            for (const m of validMoves) {
+                const nextX = this.x + m.x * TILE_SIZE, nextY = this.y + m.y * TILE_SIZE;
+                const dist = Math.hypot(nextX - target.x, nextY - target.y);
+                if (dist < minDistance) { minDistance = dist; bestMove = m; }
             }
             return bestMove;
         }
-
-        getTargetTile() {
-            if (this.mode === 'chase') return {x: player.x, y: player.y};
-            if (this.mode === 'scatter') return this.scatterTarget;
-            if (this.mode === 'frightened') return {x: Math.random() * canvas.width, y: Math.random() * canvas.height};
-            if (this.mode === 'eaten') return this.startPos;
-            return {x: player.x, y: player.y};
-        }
-        
-        getScatterTarget() {
-            if (this.name === 'blinky') return {x: canvas.width, y: 0};
-            if (this.name === 'pinky') return {x: 0, y: 0};
-            if (this.name === 'inky') return {x: canvas.width, y: canvas.height};
-            if (this.name === 'clyde') return {x: 0, y: canvas.height};
-        }
-
         reset() {
-            this.x = this.startPos.x;
-            this.y = this.startPos.y;
-            this.mode = 'scatter';
-            setTimeout(() => this.mode = 'chase', 5000);
+            this.x = this.startPos.x; this.y = this.startPos.y;
+            this.mode = 'chase';
         }
     }
 
     function init(isNewGame = true) {
-        if (isNewGame) {
-            score = 0;
-            lives = 3;
-            currentLevel = 0;
-        }
+        if (isNewGame) { score = 0; lives = 3; currentLevel = 0; }
         levelDisplay.textContent = `LEVEL: ${currentLevel + 1}`;
-        PACMAN_SPEED = 2 + currentLevel * 0.2;
-        GHOST_SPEED = 1.8 + currentLevel * 0.2;
-        
-        map = levels[currentLevel].map(arr => arr.slice());
-        dotCount = map.flat().filter(tile => tile === 0 || tile === 3).length;
+        pacmanSpeed = 2 + currentLevel * 0.2;
+        ghostSpeed = 1.8 + currentLevel * 0.2;
+        map = levels[currentLevel % levels.length].map(arr => arr.slice());
+        dotCount = map.flat().filter(t => t === 0 || t === 3).length;
         
         player = new Player(13.5 * TILE_SIZE, 17 * TILE_SIZE);
+        player.speed = pacmanSpeed;
         ghosts = [
-            new Ghost(13.5 * TILE_SIZE, 11 * TILE_SIZE, '#FF0000', 'blinky'),
-            new Ghost(11.5 * TILE_SIZE, 13 * TILE_SIZE, '#FFB8FF', 'pinky'),
-            new Ghost(13.5 * TILE_SIZE, 13 * TILE_SIZE, '#00FFFF', 'inky'),
-            new Ghost(15.5 * TILE_SIZE, 13 * TILE_SIZE, '#FFB852', 'clyde')
+            new Ghost(13 * TILE_SIZE, 10 * TILE_SIZE, '#FF0000'), // Blinky
+            new Ghost(15 * TILE_SIZE, 11 * TILE_SIZE, '#FFB8FF'), // Pinky
+            new Ghost(11 * TILE_SIZE, 11 * TILE_SIZE, '#00FFFF'), // Inky
+            new Ghost(13 * TILE_SIZE, 12 * TILE_SIZE, '#FFB852')  // Clyde
         ];
+        ghosts.forEach(g => g.speed = ghostSpeed);
         updateLivesDisplay();
-    }
-    
-    function update() {
-        player.update();
-        ghosts.forEach(ghost => ghost.update());
-        checkCollisions();
-
-        if (dotCount === 0) {
-            levelComplete();
-        }
+        scoreDisplay.textContent = `SKOR: ${score}`;
     }
 
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        drawMap();
-        player.draw(ctx);
-        ghosts.forEach(ghost => ghost.draw(ctx));
-    }
-    
     function gameLoop() {
         update();
         draw();
         animationFrameId = requestAnimationFrame(gameLoop);
     }
     
+    function update() {
+        player.update();
+        ghosts.forEach(g => g.update());
+        checkCollisions();
+        if (dotCount === 0) levelComplete();
+    }
+    
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawMap();
+        player.draw(ctx);
+        ghosts.forEach(g => g.draw(ctx));
+    }
+
     function drawMap() {
-        for (let row = 0; row < map.length; row++) {
-            for (let col = 0; col < map[row].length; col++) {
-                if (map[row][col] === 1) { // Duvar
-                    ctx.fillStyle = '#0000FF';
-                    ctx.fillRect(col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-                } else if (map[row][col] === 0) { // Yem
-                    ctx.fillStyle = 'white';
-                    ctx.beginPath();
-                    ctx.arc(col * TILE_SIZE + TILE_SIZE/2, row * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/6, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (map[row][col] === 3) { // Güç Yemi
-                    ctx.fillStyle = 'white';
-                    ctx.beginPath();
-                    ctx.arc(col * TILE_SIZE + TILE_SIZE/2, row * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/3, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
+        for (let r = 0; r < map.length; r++) for (let c = 0; c < map[r].length; c++) {
+            if (map[r][c] === 1) { ctx.fillStyle = '#0000FF'; ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE); }
+            else if (map[r][c] === 0) { ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(c * TILE_SIZE + TILE_SIZE/2, r * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/6, 0, 2 * Math.PI); ctx.fill(); }
+            else if (map[r][c] === 3) { ctx.fillStyle = 'white'; ctx.beginPath(); ctx.arc(c * TILE_SIZE + TILE_SIZE/2, r * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/3, 0, 2 * Math.PI); ctx.fill(); }
         }
     }
     
     function updateLivesDisplay() {
         livesDisplay.innerHTML = '';
-        for (let i = 0; i < lives; i++) {
-            const lifeDiv = document.createElement('div');
-            lifeDiv.className = 'life';
-            livesDisplay.appendChild(lifeDiv);
-        }
+        for (let i = 0; i < lives; i++) livesDisplay.innerHTML += `<div class="life"></div>`;
     }
 
     function checkCollisions() {
-        ghosts.forEach(ghost => {
-            const dx = player.x - ghost.x;
-            const dy = player.y - ghost.y;
-            if (Math.hypot(dx, dy) < TILE_SIZE) {
-                if (ghost.mode === 'frightened') {
-                    ghost.mode = 'eaten';
-                    score += 200 * ghostScoreMultiplier;
-                    ghostScoreMultiplier *= 2;
-                } else if (ghost.mode !== 'eaten') {
-                    loseLife();
-                }
+        ghosts.forEach(g => {
+            if (Math.hypot(player.x - g.x, player.y - g.y) < TILE_SIZE) {
+                if (g.mode === 'frightened') {
+                    g.mode = 'eaten'; score += 200 * ghostScoreMultiplier; ghostScoreMultiplier *= 2;
+                } else if (g.mode !== 'eaten') loseLife();
             }
         });
         scoreDisplay.textContent = `SKOR: ${score}`;
@@ -333,63 +234,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loseLife() {
         lives--;
+        cancelAnimationFrame(animationFrameId);
         updateLivesDisplay();
-        if (lives <= 0) {
-            gameOver();
-        } else {
-            player.reset();
-            ghosts.forEach(g => g.reset());
-        }
+        if (lives <= 0) { gameOver(); } 
+        else { setTimeout(() => { player.reset(); ghosts.forEach(g => g.reset()); gameLoop(); }, 1000); }
     }
 
-    function gameOver() {
-        cancelAnimationFrame(animationFrameId);
-        gameOverScreen.classList.remove('hidden');
-    }
+    function gameOver() { gameOverScreen.classList.remove('hidden'); }
     
     function levelComplete() {
         cancelAnimationFrame(animationFrameId);
         levelCompleteScreen.classList.remove('hidden');
         setTimeout(() => {
             levelCompleteScreen.classList.add('hidden');
-            currentLevel++;
-            if (currentLevel >= levels.length) currentLevel = 0; // Leveller bitince başa dön
-            init(false);
-            gameLoop();
+            currentLevel++; init(false); gameLoop();
         }, 3000);
     }
 
     function frightenGhosts() {
-        clearTimeout(frightenedTimer);
-        ghostScoreMultiplier = 1;
-        ghosts.forEach(ghost => {
-            if(ghost.mode !== 'eaten') ghost.mode = 'frightened';
-        });
+        clearTimeout(frightenedTimer); ghostScoreMultiplier = 1;
+        ghosts.forEach(g => { if(g.mode !== 'eaten') g.mode = 'frightened'; });
         frightenedTimer = setTimeout(() => {
-            ghosts.forEach(ghost => {
-                if (ghost.mode === 'frightened') ghost.mode = 'chase';
-            });
+            ghosts.forEach(g => { if (g.mode === 'frightened') g.mode = 'chase'; });
         }, 7000);
     }
 
-    window.addEventListener('keydown', e => {
-        const keyMap = { 'ArrowUp': {x:0, y:-1}, 'ArrowDown': {x:0, y:1}, 'ArrowLeft': {x:-1, y:0}, 'ArrowRight': {x:1, y:0},
-                         'w': {x:0, y:-1}, 's': {x:0, y:1}, 'a': {x:-1, y:0}, 'd': {x:1, y:0} };
-        if (keyMap[e.key]) {
-            e.preventDefault();
-            player.nextDir = keyMap[e.key];
-        }
-    });
+    const keyMap = {'ArrowUp':{x:0,y:-1},'ArrowDown':{x:0,y:1},'ArrowLeft':{x:-1,y:0},'ArrowRight':{x:1,y:0}};
+    window.addEventListener('keydown', e => { if (keyMap[e.key]) { e.preventDefault(); player.nextDir = keyMap[e.key]; } });
+    
+    btnUp.addEventListener('click', () => player.nextDir = {x:0, y:-1});
+    btnDown.addEventListener('click', () => player.nextDir = {x:0, y:1});
+    btnLeft.addEventListener('click', () => player.nextDir = {x:-1, y:0});
+    btnRight.addEventListener('click', () => player.nextDir = {x:1, y:0});
 
-    startButton.addEventListener('click', () => {
-        startScreen.classList.add('hidden');
-        init(true);
-        gameLoop();
-    });
-
-    restartButton.addEventListener('click', () => {
-        gameOverScreen.classList.add('hidden');
-        init(true);
-        gameLoop();
-    });
+    startButton.addEventListener('click', () => { startScreen.classList.add('hidden'); init(true); gameLoop(); });
+    restartButton.addEventListener('click', () => { gameOverScreen.classList.add('hidden'); init(true); gameLoop(); });
 });
