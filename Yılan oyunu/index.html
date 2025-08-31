@@ -1,241 +1,355 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Klasik Yılan Oyunu</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background: #111;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
-      overflow: hidden; /* Sayfa kaymasını engelle */
-      touch-action: none; /* Dokunmatik kaydırmayı devre dışı bırak */
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Klasik Yılan Oyunu</title>
+    
+    <style>
+        :root {
+            --bg-color: #333;
+            --game-board-bg: #a2d149;
+            --snake-color: #4a752c;
+            --snake-border-color: #3b5e23;
+            --food-color: #d95763;
+            --text-color: #f0f0f0;
+            --font-family: 'Roboto', sans-serif;
+        }
 
-    canvas {
-      background: #222;
-      border: 2px solid #0f0;
-      border-radius: 8px;
-      margin-top: 15px;
-      touch-action: none;
-    }
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-    #menu, #game-over {
-      text-align: center;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    button {
-      margin-top: 10px;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      background: #0f0;
-      color: #111;
-      font-weight: bold;
-      transition: 0.3s;
-    }
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: var(--bg-color);
+            font-family: var(--font-family);
+            color: var(--text-color);
+            padding: 10px;
+        }
 
-    button:hover {
-      background: #0c0;
-    }
+        .game-container {
+            width: 100%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
 
-    #game-container {
-      display: none;
-      flex-direction: column;
-      align-items: center;
-    }
-  </style>
-</head>
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        #game-board {
+            border: 5px solid #222;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            border-radius: 5px;
+            background-color: var(--game-board-bg);
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 10px;
+            width: 80%;
+            max-width: 280px;
+            margin-top: 15px;
+        }
+
+        .controls button {
+            background-color: #555;
+            border: none;
+            color: var(--text-color);
+            font-size: 1.8rem;
+            border-radius: 15px;
+            padding: 15px;
+            cursor: pointer;
+            touch-action: manipulation;
+            transition: background-color 0.2s ease;
+        }
+
+        .controls button:active {
+            background-color: #777;
+        }
+        
+        .up { grid-area: 1 / 2 / 2 / 3; }
+        .left { grid-area: 2 / 1 / 3 / 2; }
+        .down { grid-area: 2 / 2 / 3 / 3; }
+        .right { grid-area: 2 / 3 / 3 / 4; }
+
+        #start-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.75);
+            padding: 30px 40px;
+            border-radius: 15px;
+            text-align: center;
+            border: 2px solid #444;
+            z-index: 10;
+        }
+
+        #start-modal h2 {
+            margin-bottom: 15px;
+            font-size: 2rem;
+        }
+        
+        #start-modal p { margin-bottom: 25px; font-size: 1rem; }
+
+        #start-button {
+            padding: 10px 30px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: var(--snake-color);
+            color: #fff;
+            border: none;
+            transition: transform 0.2s ease;
+        }
+
+        #start-button:hover {
+            transform: scale(1.1);
+        }
+    </style>
+    </head>
 <body>
-  <!-- Başlangıç Menüsü -->
-  <div id="menu">
-    <h1>🐍 Klasik Yılan Oyunu</h1>
-    <label for="difficulty">Zorluk Seç:</label>
-    <select id="difficulty">
-      <option value="150">Kolay</option>
-      <option value="100" selected>Orta</option>
-      <option value="70">Zor</option>
-    </select><br>
-    <button onclick="startGame()">Başla</button>
-  </div>
+    
+    <div class="game-container">
+        <h1>YILAN OYUNU</h1>
+        <div class="hud">
+            <div id="score">SKOR: 0</div>
+            <div id="high-score">REKOR: 0</div>
+        </div>
+        <canvas id="game-board"></canvas>
+        <div class="controls">
+            <button class="up">▲</button>
+            <button class="left">◄</button>
+            <button class="down">▼</button>
+            <button class="right">►</button>
+        </div>
+    </div>
+    
+    <div id="start-modal">
+        <h2>OYUNA BAŞLA</h2>
+        <p>Yön tuşları veya dokunmatik kontrolleri kullan.</p>
+        <button id="start-button">BAŞLAT</button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameBoard = document.getElementById('game-board');
+            const ctx = gameBoard.getContext('2d');
+            const scoreElement = document.getElementById('score');
+            const highScoreElement = document.getElementById('high-score');
+            const startModal = document.getElementById('start-modal');
+            const startButton = document.getElementById('start-button');
 
-  <!-- Oyun Alanı -->
-  <div id="game-container">
-    <canvas id="gameCanvas" width="400" height="400"></canvas>
-    <p>Skor: <span id="score">0</span></p>
-    <button onclick="restartGame()">Yeniden Başla</button>
-  </div>
+            const gridSize = 20;
+            let canvasSize = gameBoard.clientWidth;
+            gameBoard.width = canvasSize;
+            gameBoard.height = canvasSize;
+            
+            let snake, food, score, highScore, direction, changingDirection, gameSpeed, gameLoopTimeout;
+            
+            const initialSnake = [
+                { x: 10 * gridSize, y: 10 * gridSize },
+                { x: 9 * gridSize, y: 10 * gridSize },
+                { x: 8 * gridSize, y: 10 * gridSize }
+            ];
 
-  <!-- Oyun Bitti -->
-  <div id="game-over" style="display:none;">
-    <h2>Oyun Bitti! 😢</h2>
-    <p>Skorun: <span id="finalScore">0</span></p>
-    <button onclick="goMenu()">Menüye Dön</button>
-  </div>
+            function startGame() {
+                snake = [...initialSnake];
+                score = 0;
+                highScore = localStorage.getItem('googleSnakeHighScore') || 0;
+                direction = { x: gridSize, y: 0 };
+                changingDirection = false;
+                gameSpeed = 150;
+                
+                updateScoreDisplay();
+                generateFood();
+                main();
+                startModal.style.display = 'none';
+            }
 
-  <!-- Sesler -->
-  <audio id="eatSound" src="https://www.soundjay.com/buttons/sounds/button-09.mp3"></audio>
-  <audio id="gameOverSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
-  <audio id="startSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+            function main() {
+                if (isGameOver()) {
+                    if (score > highScore) {
+                        highScore = score;
+                        localStorage.setItem('googleSnakeHighScore', highScore);
+                    }
+                    startModal.style.display = 'block';
+                    document.getElementById('start-modal').querySelector('h2').innerText = 'OYUN BİTTİ!';
+                    document.getElementById('start-button').innerText = 'YENİDEN BAŞLA';
+                    return;
+                }
+                changingDirection = false;
+                gameLoopTimeout = setTimeout(() => {
+                    clearCanvas();
+                    drawFood();
+                    advanceSnake();
+                    drawSnake();
+                    main();
+                }, gameSpeed);
+            }
 
-  <script>
-    // Kaydırmayı engelle
-    document.body.addEventListener('touchmove', function(e){
-      e.preventDefault();
-    }, { passive: false });
+            function isGameOver() {
+                const head = snake[0];
+                if (head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize) return true;
+                for (let i = 1; i < snake.length; i++) {
+                    if (head.x === snake[i].x && head.y === snake[i].y) return true;
+                }
+                return false;
+            }
 
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+            function clearCanvas() {
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--game-board-bg');
+                ctx.fillRect(0, 0, canvasSize, canvasSize);
+            }
+            
+            // --- GOOGLE TARZI ÇİZİM FONKSİYONLARI ---
+            function drawSnake() {
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--snake-color');
+                ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--snake-border-color');
+                ctx.lineWidth = 2;
 
-    let box = 20;
-    let snake;
-    let direction;
-    let food;
-    let score;
-    let game;
-    let speed = 100;
+                snake.forEach((part, index) => {
+                    ctx.fillRect(part.x, part.y, gridSize, gridSize);
+                    ctx.strokeRect(part.x, part.y, gridSize, gridSize);
+                    
+                    // Yılanın kafasına göz ekle
+                    if (index === 0) {
+                        ctx.fillStyle = '#fff';
+                        const eyeSize = gridSize / 5;
+                        const eyeOffset = gridSize / 4;
+                        // Gözlerin yılanın yönüne göre pozisyonunu ayarla
+                        if (direction.x === gridSize) { // Sağa
+                            ctx.fillRect(part.x + gridSize - eyeOffset - eyeSize, part.y + eyeOffset, eyeSize, eyeSize);
+                            ctx.fillRect(part.x + gridSize - eyeOffset - eyeSize, part.y + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                        } else if (direction.x === -gridSize) { // Sola
+                            ctx.fillRect(part.x + eyeOffset, part.y + eyeOffset, eyeSize, eyeSize);
+                            ctx.fillRect(part.x + eyeOffset, part.y + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                        } else if (direction.y === -gridSize) { // Yukarı
+                            ctx.fillRect(part.x + eyeOffset, part.y + eyeOffset, eyeSize, eyeSize);
+                            ctx.fillRect(part.x + gridSize - eyeOffset - eyeSize, part.y + eyeOffset, eyeSize, eyeSize);
+                        } else if (direction.y === gridSize) { // Aşağı
+                            ctx.fillRect(part.x + eyeOffset, part.y + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                            ctx.fillRect(part.x + gridSize - eyeOffset - eyeSize, part.y + gridSize - eyeOffset - eyeSize, eyeSize, eyeSize);
+                        }
+                        // Gözleri çizdikten sonra ana yılan rengini geri yükle
+                        ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--snake-color');
+                    }
+                });
+            }
 
-    const eatSound = document.getElementById("eatSound");
-    const gameOverSound = document.getElementById("gameOverSound");
-    const startSound = document.getElementById("startSound");
+            function drawFood() {
+                ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--food-color');
+                ctx.strokeStyle = '#a8454f';
+                ctx.lineWidth = 2;
+                ctx.fillRect(food.x, food.y, gridSize, gridSize);
+                ctx.strokeRect(food.x, food.y, gridSize, gridSize);
+            }
+            // --- BİTİŞ: ÇİZİM FONKSİYONLARI ---
 
-    function startGame() {
-      startSound.play();
-      document.getElementById("menu").style.display = "none";
-      document.getElementById("game-over").style.display = "none";
-      document.getElementById("game-container").style.display = "flex";
+            function advanceSnake() {
+                const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+                snake.unshift(head);
+                if (head.x === food.x && head.y === food.y) {
+                    score += 10;
+                    if(gameSpeed > 60) gameSpeed -= 2;
+                    updateScoreDisplay();
+                    generateFood();
+                } else {
+                    snake.pop();
+                }
+            }
 
-      speed = parseInt(document.getElementById("difficulty").value);
+            function generateFood() {
+                let foodX, foodY;
+                while (true) {
+                    foodX = Math.floor(Math.random() * (canvasSize / gridSize)) * gridSize;
+                    foodY = Math.floor(Math.random() * (canvasSize / gridSize)) * gridSize;
+                    if (!snake.some(part => part.x === foodX && part.y === foodY)) break;
+                }
+                food = { x: foodX, y: foodY };
+            }
 
-      snake = [{x: 9 * box, y: 10 * box}];
-      direction = null;
-      food = spawnFood();
-      score = 0;
-      document.getElementById("score").textContent = score;
+            function updateScoreDisplay() {
+                scoreElement.textContent = `SKOR: ${score}`;
+                highScoreElement.textContent = `REKOR: ${highScore}`;
+            }
 
-      clearInterval(game);
-      game = setInterval(draw, speed);
-    }
+            function changeDirection(event) {
+                if (changingDirection) return;
+                changingDirection = true;
+                const keyPressed = event.key;
+                const isGoingUp = direction.y === -gridSize, isGoingDown = direction.y === gridSize, isGoingRight = direction.x === gridSize, isGoingLeft = direction.x === -gridSize;
+                if ((keyPressed === 'ArrowUp' || keyPressed === 'w') && !isGoingDown) direction = { x: 0, y: -gridSize };
+                if ((keyPressed === 'ArrowDown' || keyPressed === 's') && !isGoingUp) direction = { x: 0, y: gridSize };
+                if ((keyPressed === 'ArrowLeft' || keyPressed === 'a') && !isGoingRight) direction = { x: -gridSize, y: 0 };
+                if ((keyPressed === 'ArrowRight' || keyPressed === 'd') && !isGoingLeft) direction = { x: gridSize, y: 0 };
+            }
 
-    function spawnFood() {
-      return {
-        x: Math.floor(Math.random() * 19) * box,
-        y: Math.floor(Math.random() * 19) * box
-      };
-    }
+            const controls = {'up': { x: 0, y: -gridSize }, 'down': { x: 0, y: gridSize }, 'left': { x: -gridSize, y: 0 }, 'right': { x: gridSize, y: 0 }};
+            document.querySelector('.controls').addEventListener('click', (e) => {
+                if(e.target.tagName !== 'BUTTON' || changingDirection) return;
+                const newDir = e.target.classList[0];
+                const isOpposite = (direction.x === -controls[newDir].x && direction.y === -controls[newDir].y);
+                if(!isOpposite) {
+                    direction = controls[newDir];
+                    changingDirection = true;
+                }
+            });
 
-    function restartGame() {
-      startGame();
-    }
+            let touchStartX = 0, touchStartY = 0;
+            gameBoard.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; touchStartY = e.changedTouches[0].screenY; }, { passive: true });
+            gameBoard.addEventListener('touchend', e => {
+                if (changingDirection) return;
+                const touchEndX = e.changedTouches[0].screenX, touchEndY = e.changedTouches[0].screenY;
+                const dx = touchEndX - touchStartX, dy = touchEndY - touchStartY;
+                const isGoingUp = direction.y === -gridSize, isGoingDown = direction.y === gridSize, isGoingRight = direction.x === gridSize, isGoingLeft = direction.x === -gridSize;
+                if (Math.abs(dx) > Math.abs(dy)) {
+                    if (dx > 30 && !isGoingLeft) direction = { x: gridSize, y: 0 };
+                    else if (dx < -30 && !isGoingRight) direction = { x: -gridSize, y: 0 };
+                } else {
+                    if (dy > 30 && !isGoingUp) direction = { x: 0, y: gridSize };
+                    else if (dy < -30 && !isGoingDown) direction = { x: 0, y: -gridSize };
+                }
+                changingDirection = true;
+            }, { passive: true });
 
-    function goMenu() {
-      document.getElementById("game-container").style.display = "none";
-      document.getElementById("game-over").style.display = "none";
-      document.getElementById("menu").style.display = "block";
-      clearInterval(game);
-    }
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "ArrowLeft" && direction !== "RIGHT") direction = "LEFT";
-      else if (event.key === "ArrowUp" && direction !== "DOWN") direction = "UP";
-      else if (event.key === "ArrowRight" && direction !== "LEFT") direction = "RIGHT";
-      else if (event.key === "ArrowDown" && direction !== "UP") direction = "DOWN";
-    });
-
-    // Mobil kaydırma kontrolleri
-    document.addEventListener("touchstart", handleTouchStart, false);
-    document.addEventListener("touchend", handleTouchEnd, false);
-    let xDown = null;
-    let yDown = null;
-
-    function handleTouchStart(evt) {
-      const firstTouch = evt.touches[0];
-      xDown = firstTouch.clientX;
-      yDown = firstTouch.clientY;
-    }
-
-    function handleTouchEnd(evt) {
-      if (!xDown || !yDown) return;
-      let xUp = evt.changedTouches[0].clientX;
-      let yUp = evt.changedTouches[0].clientY;
-
-      let xDiff = xDown - xUp;
-      let yDiff = yDown - yUp;
-
-      if (Math.abs(xDiff) > Math.abs(yDiff)) {
-        if (xDiff > 0 && direction !== "RIGHT") direction = "LEFT";
-        else if (xDiff < 0 && direction !== "LEFT") direction = "RIGHT";
-      } else {
-        if (yDiff > 0 && direction !== "DOWN") direction = "UP";
-        else if (yDiff < 0 && direction !== "UP") direction = "DOWN";
-      }
-      xDown = null;
-      yDown = null;
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Yılanı çiz
-      for (let i = 0; i < snake.length; i++) {
-        ctx.fillStyle = i === 0 ? "lime" : "green";
-        ctx.fillRect(snake[i].x, snake[i].y, box, box);
-        ctx.strokeStyle = "#111";
-        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
-      }
-
-      // Yemi çiz
-      ctx.fillStyle = "red";
-      ctx.fillRect(food.x, food.y, box, box);
-
-      let snakeX = snake[0].x;
-      let snakeY = snake[0].y;
-
-      if (direction === "LEFT") snakeX -= box;
-      if (direction === "UP") snakeY -= box;
-      if (direction === "RIGHT") snakeX += box;
-      if (direction === "DOWN") snakeY += box;
-
-      if (snakeX === food.x && snakeY === food.y) {
-        score++;
-        document.getElementById("score").textContent = score;
-        eatSound.play();
-        food = spawnFood();
-      } else {
-        snake.pop();
-      }
-
-      let newHead = {x: snakeX, y: snakeY};
-
-      if (
-        snakeX < 0 || snakeY < 0 || snakeX >= canvas.width || snakeY >= canvas.height ||
-        collision(newHead, snake)
-      ) {
-        clearInterval(game);
-        gameOverSound.play();
-        document.getElementById("finalScore").textContent = score;
-        document.getElementById("game-container").style.display = "none";
-        document.getElementById("game-over").style.display = "block";
-      }
-
-      snake.unshift(newHead);
-    }
-
-    function collision(head, array) {
-      for (let i = 0; i < array.length; i++) {
-        if (head.x === array[i].x && head.y === array[i].y) return true;
-      }
-      return false;
-    }
-  </script>
-</body>
+            document.addEventListener('keydown', changeDirection);
+            startButton.addEventListener('click', startGame);
+            
+            window.addEventListener('resize', () => {
+                canvasSize = gameBoard.clientWidth;
+                gameBoard.width = canvasSize;
+                gameBoard.height = canvasSize;
+            });
+        });
+    </script>
+    </body>
 </html>
