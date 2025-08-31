@@ -7,8 +7,8 @@
     <style>
         body {
             margin: 0;
-            background: #f0f0f0;
-            font-family: 'Arial', sans-serif;
+            background: #e0e0e0;
+            font-family: 'Press Start 2P', cursive;
             text-align: center;
             display: flex;
             flex-direction: column;
@@ -16,110 +16,87 @@
             justify-content: center;
             height: 100vh;
             overflow: hidden;
+            background-image: url('https://via.placeholder.com/1920x1080/c0c0c0/ffffff?text=Oyun_Arka_Plani');
+            background-size: cover;
+            background-position: center;
         }
+
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
         #menu {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 30px 40px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            border: 2px solid #555;
         }
+
         h1 {
-            color: #333;
+            color: #4CAF50;
+            margin-bottom: 25px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px #333;
         }
+
         button {
-            padding: 12px 20px;
-            font-size: 18px;
+            padding: 15px 25px;
+            font-size: 20px;
             border: none;
-            border-radius: 8px;
+            border-radius: 10px;
             background: #4CAF50;
             color: white;
             cursor: pointer;
-            margin: 10px;
-            transition: background 0.3s, transform 0.2s;
+            margin: 12px;
+            transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-family: 'Press Start 2P', cursive;
         }
+
         button:hover {
             background: #45a049;
-            transform: translateY(-2px);
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
         }
+
         button:active {
-            transform: translateY(0);
+            transform: translateY(0) scale(0.98);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
+
         canvas {
-            background: #fff;
+            background: #333;
             display: none;
             margin-top: 20px;
-            border: 2px solid #333;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border: 5px solid #555;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
         }
-        .mobile-controls {
-            display: none;
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-        }
-        .mobile-controls-row {
-            display: flex;
-            justify-content: center;
-        }
-        .control-btn {
-            width: 60px;
-            height: 60px;
-            margin: 5px;
-            border-radius: 50%;
-            background: rgba(0, 0, 0, 0.5);
-            color: white;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            user-select: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        @media (max-width: 768px) {
-            .mobile-controls {
-                display: block;
-            }
+
+        .game-text {
+            font-family: 'Press Start 2P', cursive;
+            color: #fff;
+            text-shadow: 1px 1px 2px #000;
         }
     </style>
 </head>
 <body>
     <div id="menu">
         <h1>🌀 Labirent Oyunu</h1>
-        <button onclick="startGame()">Başla</button>
+        <button id="startButton" disabled>Yükleniyor...</button>
         <button onclick="showHighScore()">En Yüksek Skor</button>
     </div>
+
     <canvas id="gameCanvas"></canvas>
-    <div id="mobile-controls" class="mobile-controls">
-        <div class="mobile-controls-row">
-            <div class="control-btn" id="up-btn">⬆️</div>
-        </div>
-        <div class="mobile-controls-row">
-            <div class="control-btn" id="left-btn">⬅️</div>
-            <div class="control-btn" id="down-btn">⬇️</div>
-            <div class="control-btn" id="right-btn">➡️</div>
-        </div>
-    </div>
+
     <script>
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
         const menu = document.getElementById("menu");
-        const mobileControls = document.getElementById("mobile-controls");
-        function resizeCanvas() {
-            canvas.width = Math.min(window.innerWidth * 0.9, 800);
-            canvas.height = Math.min(window.innerHeight * 0.7, 600);
-            if (canvas.style.display === "block") {
-                draw();
-            }
-        }
-        resizeCanvas();
-        window.onresize = resizeCanvas;
+        const startButton = document.getElementById("startButton");
+
         const levels = [
             [
                 "1111111111",
@@ -191,12 +168,50 @@
                 "11111111111111"
             ]
         ];
+
         let maze = [];
         let player = { row: 0, col: 0 };
         let currentLevel = 0;
         let score = 0;
         let highScore = localStorage.getItem("labirentHighScore") || 0;
         let isGameRunning = false;
+
+        const wallImage = new Image();
+        wallImage.src = 'https://via.placeholder.com/50x50/8b4513/ffffff?text=Duvar';
+        const playerImage = new Image();
+        playerImage.src = 'https://via.placeholder.com/50x50/ff0000/ffffff?text=Oyuncu';
+        const exitImage = new Image();
+        exitImage.src = 'https://via.placeholder.com/50x50/ffd700/ffffff?text=Cikis';
+        const canvasBgImage = new Image();
+        canvasBgImage.src = 'https://via.placeholder.com/800x600/333333/ffffff?text=Canvas_Arka_Plani';
+
+        let imagesLoaded = 0;
+        const totalImages = 4;
+
+        function imageLoaded() {
+            imagesLoaded++;
+            if (imagesLoaded === totalImages) {
+                startButton.textContent = "Başla";
+                startButton.disabled = false;
+                startButton.onclick = startGame;
+            }
+        }
+
+        wallImage.onload = imageLoaded;
+        playerImage.onload = imageLoaded;
+        exitImage.onload = imageLoaded;
+        canvasBgImage.onload = imageLoaded;
+
+        function resizeCanvas() {
+            canvas.width = Math.min(window.innerWidth * 0.9, 800);
+            canvas.height = Math.min(window.innerHeight * 0.7, 600);
+            if (canvas.style.display === "block") {
+                draw();
+            }
+        }
+        resizeCanvas();
+        window.onresize = resizeCanvas;
+
         function loadLevel(levelIndex) {
             if (levelIndex >= levels.length) {
                 alert("🎉 Tebrikler! Tüm seviyeler bitti! Toplam Skor: " + score);
@@ -214,15 +229,19 @@
             }
             draw();
         }
+
         function startGame() {
+            if (imagesLoaded < totalImages) {
+                return;
+            }
             menu.style.display = "none";
             canvas.style.display = "block";
-            mobileControls.style.display = "block";
             score = 0;
             currentLevel = 0;
             isGameRunning = true;
             loadLevel(currentLevel);
         }
+
         function endGame() {
             isGameRunning = false;
             if (score > highScore) {
@@ -231,35 +250,37 @@
             }
             setTimeout(() => {
                 canvas.style.display = "none";
-                mobileControls.style.display = "none";
                 menu.style.display = "flex";
+                startButton.textContent = "Başla";
+                startButton.disabled = false;
             }, 1000);
         }
+
         function showHighScore() {
             alert("🏆 En Yüksek Skor: " + highScore);
         }
-        function movePlayer(direction) {
+
+        window.addEventListener("keydown", e => {
             if (!isGameRunning) return;
             let newRow = player.row;
             let newCol = player.col;
-            switch (direction) {
-                case "up":
-                    newRow--;
-                    break;
-                case "down":
-                    newRow++;
-                    break;
-                case "left":
-                    newCol--;
-                    break;
-                case "right":
-                    newCol++;
-                    break;
+
+            if (e.key === "ArrowUp" || e.key === "w") {
+                newRow--;
+            } else if (e.key === "ArrowDown" || e.key === "s") {
+                newRow++;
+            } else if (e.key === "ArrowLeft" || e.key === "a") {
+                newCol--;
+            } else if (e.key === "ArrowRight" || e.key === "d") {
+                newCol++;
             }
+
             if (newRow < 0 || newRow >= maze.length || newCol < 0 || newCol >= maze[0].length) {
                 return;
             }
-            const nextCell = maze[newRow][newCol];
+
+            const nextCell = maze[newRow] && maze[newRow][newCol];
+
             if (nextCell === "0" || nextCell === "E") {
                 player.row = newRow;
                 player.col = newCol;
@@ -272,55 +293,37 @@
                 }
                 draw();
             }
-        }
-        window.addEventListener("keydown", e => {
-            if (!isGameRunning) return;
-            if (e.key === "ArrowUp" || e.key === "w") {
-                movePlayer("up");
-            } else if (e.key === "ArrowDown" || e.key === "s") {
-                movePlayer("down");
-            } else if (e.key === "ArrowLeft" || e.key === "a") {
-                movePlayer("left");
-            } else if (e.key === "ArrowRight" || e.key === "d") {
-                movePlayer("right");
-            }
         });
-        document.getElementById("up-btn").addEventListener("click", () => movePlayer("up"));
-        document.getElementById("down-btn").addEventListener("click", () => movePlayer("down"));
-        document.getElementById("left-btn").addEventListener("click", () => movePlayer("left"));
-        document.getElementById("right-btn").addEventListener("click", () => movePlayer("right"));
+
         function draw() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            if (maze.length === 0) return;
+            if (maze.length === 0 || imagesLoaded < totalImages) return;
+
             const cellW = canvas.width / maze[0].length;
             const cellH = canvas.height / maze.length;
+
+            ctx.drawImage(canvasBgImage, 0, 0, canvas.width, canvas.height);
+
             for (let r = 0; r < maze.length; r++) {
                 for (let c = 0; c < maze[r].length; c++) {
                     const cell = maze[r][c];
                     if (cell === "1") {
-                        ctx.fillStyle = "#333";
-                        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                        ctx.drawImage(wallImage, c * cellW, r * cellH, cellW, cellH);
                     } else if (cell === "E") {
-                        ctx.fillStyle = "#00c400";
-                        ctx.fillRect(c * cellW, r * cellH, cellW, cellH);
+                        ctx.drawImage(exitImage, c * cellW, r * cellH, cellW, cellH);
                     }
                 }
             }
-            ctx.fillStyle = "#ff0000";
-            ctx.beginPath();
-            ctx.arc(
-                player.col * cellW + cellW / 2,
-                player.row * cellH + cellH / 2,
-                Math.min(cellW, cellH) / 3,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
-            ctx.fillStyle = "#333";
-            ctx.font = "16px Arial";
-            ctx.fillText("Skor: " + score, 10, 20);
-            ctx.fillText("En Yüksek: " + highScore, 10, 40);
-            ctx.fillText("Level: " + (currentLevel + 1), 10, 60);
+
+            ctx.drawImage(playerImage, player.col * cellW, player.row * cellH, cellW, cellH);
+
+            ctx.fillStyle = "#fff";
+            ctx.font = "20px 'Press Start 2P', cursive";
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.fillText("SKOR: " + score, 10, 10);
+            ctx.fillText("EN YÜKSEK: " + highScore, 10, 40);
+            ctx.fillText("LEVEL: " + (currentLevel + 1), 10, 70);
         }
     </script>
 </body>
